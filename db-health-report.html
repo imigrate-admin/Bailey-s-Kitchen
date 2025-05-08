@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Health Report - 2025-05-09</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        h2 { color: #444; margin-top: 20px; }
+        .ok { color: green; }
+        .warning { color: orange; }
+        .critical { color: red; }
+        .summary { font-weight: bold; margin: 20px 0; font-size: 1.2em; padding: 10px; border-radius: 5px; }
+        .summary.ok { background-color: #e8f5e9; color: #2e7d32; }
+        .summary.warning { background-color: #fff8e1; color: #ff8f00; }
+        .summary.critical { background-color: #ffebee; color: #c62828; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .timestamp { color: #888; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <h1>Database Health Report</h1>
+    <p class="timestamp">Generated on: Fri May  9 00:21:36 IST 2025</p>
+<h2>Container Status</h2>
+<p class='ok'>Container baileys-kitchen-postgres is running</p>
+<ul>
+<li>Status: running</li>
+<li>Health: healthy</li>
+</ul>
+<h2>Database Connectivity</h2>
+<p class='ok'>Successfully connected to database baileys_kitchen</p>
+<ul>
+<li>Version:  PostgreSQL 15.12 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit</li>
+<li>Uptime:  08:01:12</li>
+</ul>
+<h2>Database Statistics</h2>
+<table>
+<tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Database Size</td><td> 7653 kB</td></tr>
+<tr><td>Tables Count</td><td>     2</td></tr>
+<tr><td>Active Connections</td><td>     1</td></tr>
+<tr><td>Max Connections</td><td> 100</td></tr>
+<tr><td>Total Transactions</td><td>       46</td></tr>
+<tr><td>Current Locks</td><td>     1</td></tr>
+</table>
+<p class='ok'>Connection usage: 1% of max connections (     1/ 100)</p>
+<h2>Backup Status</h2>
+<table>
+<tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Total Backups</td><td>2</td></tr>
+<tr><td>Latest Backup</td><td>No backups found</td></tr>
+</table>
+<p class='ok'>Fresh backup (less than a day old)</p>
+<h2>Disk Space Usage</h2>
+<table>
+<tr><th>Location</th><th>Total</th><th>Used</th><th>Available</th><th>Use %</th></tr>
+<tr><td>Container Data Directory</td><td>1006.9G</td><td>9.0G</td><td>946.7G</td><td>1%</td></tr>
+<tr><td>Docker Volume</td><td colspan='4'></td></tr>
+<tr><td>Host (Backup Directory)</td><td>461G</td><td>110G</td><td>351G</td><td>24%</td></tr>
+<tr><td>Backup Directory Size</td><td colspan='4'>8.0K</td></tr>
+</table>
+<p class='ok'>Database container disk usage is at 1%</p>
+<p class='ok'>Host disk usage for backups is at 24%</p>
+<h2>Log Analysis</h2>
+<table>
+<tr><th>Log File</th><th>Status</th><th>Errors</th><th>Warnings</th></tr>
+<tr><td>PostgreSQL Log</td><td class='ok'>Not found (normal for new setup)</td><td>-</td><td>-</td></tr>
+<tr><td>db-backup.log</td>
+<td class='ok'>No errors</td><td>0</td><td>0</td></tr>
+<tr><td>db-restore.log</td>
+<td class='ok'>No errors</td><td>0</td><td>0</td></tr>
+</table>
+<h2>Summary</h2>
+<p class='summary ok'>Overall Status: OK</p>
+<ul>
+<li>Warnings: 0</li>
+<li>Critical Issues: 0</li>
+</ul>
+</body></html>

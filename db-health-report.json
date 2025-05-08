@@ -1,0 +1,53 @@
+{
+  "timestamp": "2025-05-08T20:16:23+05:30",
+  "status": "CRITICAL",
+  "checks": [
+    {
+      "name": "container_status",
+      "status": "OK",
+      "details": "Container baileys-kitchen-postgres is running (Status: running, Health: healthy)"
+    },
+    {
+      "name": "db_connectivity",
+      "status": "OK",
+      "details": "Successfully connected to database baileys_kitchen (Version:  PostgreSQL 15.12 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit, Uptime:  03:55:59)"
+    },
+    {
+      "name": "db_connections",
+      "status": "OK",
+      "details": "Connection usage: 2% of max connections (     2/ 100)"
+    },
+    {
+      "name": "backup_status",
+      "status": "CRITICAL",
+      "details": "Latest backup is 999 days old (threshold: 3 days)"
+    },
+    {
+      "name": "disk_space",
+      "status": "OK",
+      "details": "Database container disk usage is at 1%"
+    },
+    {
+      "name": "host_disk_space",
+      "status": "OK",
+      "details": "Host disk usage for backups is at 24%"
+    },
+    {
+      "name": "postgresql_log",
+      "status": "WARNING",
+      "details": "PostgreSQL log file not found in container"
+    },
+    {
+      "name": "db-backup.log_analysis",
+      "status": "OK",
+      "details": "No errors found in db-backup.log"
+    },
+    {
+      "name": "db-restore.log_analysis",
+      "status": "OK",
+      "details": "Log file db-restore.log not found (normal for new setup)"
+    }
+  ],
+  "warnings": 0,
+  "criticals": 1
+}

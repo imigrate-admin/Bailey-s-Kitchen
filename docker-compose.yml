@@ -4,19 +4,23 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: baileys-kitchen-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: baileys_kitchen
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - baileys_postgres_data:/var/lib/postgresql/data
+      - baileys_postgres_backup:/var/lib/postgresql/backup
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d baileys_kitchen"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   api:
     build:
@@ -68,7 +72,11 @@ services:
       start_period: 10s
 
 volumes:
-  postgres_data:
+  baileys_postgres_data:
+    name: baileys_postgres_data
+    external: true
+  baileys_postgres_backup:
+    name: baileys_postgres_backup
 
 networks:
   default:
