@@ -10,6 +10,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: baileys_kitchen
       PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_MULTIPLE_DATABASES: "baileys_kitchen,user_service"
     ports:
       - "5432:5432"
     volumes:
@@ -66,6 +67,41 @@ services:
       - /app/.next
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  user-service:
+    build:
+      context: ./apps/user-service
+      dockerfile: Dockerfile
+    container_name: baileys-kitchen-user-service
+    environment:
+      NODE_ENV: development
+      PORT: 5002
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: user_service
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "true"
+      API_PREFIX: api/v1
+      CORS_ORIGIN: http://localhost:3000,http://web-client:3000
+      JWT_SECRET: your-super-secret-jwt-key-that-should-be-long-and-secure
+      JWT_EXPIRES_IN: 1h
+      JWT_REFRESH_EXPIRES_IN_DAYS: 30
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/user-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:5002/health"]
       interval: 10s
       timeout: 5s
       retries: 3
