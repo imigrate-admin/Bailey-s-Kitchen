@@ -1,0 +1,53 @@
+{
+  "name": "@baileys-kitchen/web-client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\""
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.0.1",
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "axios": "^1.4.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^2.30.0",
+    "jotai": "^2.2.3",
+    "next": "^13.4.19",
+    "next-auth": "^4.22.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.45.4",
+    "react-query": "^3.39.3",
+    "swr": "^2.2.0",
+    "tailwind-merge": "^3.2.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.4.3",
+    "@types/jest": "^29.5.3",
+    "@types/node": "^20.5.0",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "autoprefixer": "^10.4.15",
+    "eslint": "^8.47.0",
+    "eslint-config-next": "^13.4.19",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.6.2",
+    "jest-environment-jsdom": "^29.6.2",
+    "postcss": "^8.4.28",
+    "prettier": "^3.0.1",
+    "tailwindcss": "^3.3.3",
+    "typescript": "^5.1.6"
+  }
+}
