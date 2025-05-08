@@ -3,6 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
+    container_name: baileys-kitchen-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -21,9 +22,10 @@ services:
     build:
       context: ./apps/api-server
       dockerfile: Dockerfile
+    container_name: baileys-kitchen-api
     environment:
       NODE_ENV: development
-      PORT: 3001
+      PORT: 5001
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: postgres
@@ -32,9 +34,9 @@ services:
       DB_SYNCHRONIZE: "true"
       DB_LOGGING: "true"
       API_PREFIX: /api/v1
-      CORS_ORIGIN: http://localhost:3000
+      CORS_ORIGIN: http://localhost:3000,http://web-client:3000
     ports:
-      - "3001:3001"
+      - "5001:5001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,6 +44,32 @@ services:
       - ./apps/api-server:/app
       - /app/node_modules
 
+  web-client:
+    build:
+      context: ./apps/web-client
+      dockerfile: Dockerfile
+    container_name: baileys-kitchen-web-client
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:5001/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web-client:/app
+      - /app/node_modules
+      - /app/.next
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 volumes:
   postgres_data:
 
+networks:
+  default:
+    name: baileys-kitchen-network

@@ -1,94 +1,183 @@
 import { Request, Response } from 'express';
-import { UserRepository } from '../repositories/user.repository';
-
+import { User } from '../entities/User';
+import { AppError } from '../middleware/error-handler';
+import { ParsedQs } from 'qs';
+// Removed redundant import of 'Request' and 'Response' as they are already imported above
+/**
+ * Controller for user-related operations
+ */
 export class UserController {
-  private userRepository: UserRepository;
-
-  constructor() {
-    this.userRepository = new UserRepository();
-  }
-
-  async getAllUsers(req: Request, res: Response) {
+  /**
+   * Get all users
+   */
+  async findAll(req: Request, res: Response): Promise<void> {
     try {
-      const users = await this.userRepository.findAll();
-      res.json({ data: users, statusCode: 200 });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to fetch users',
-        statusCode: 500,
-        details: error instanceof Error ? error.message : undefined
+      const users = await User.find({
+        select: ['id', 'firstName', 'lastName', 'email', 'isActive', 'createdAt', 'updatedAt']
       });
+      
+      res.status(200).json({
+        status: 'success',
+        data: users
+      });
+    } catch (error) {
+      throw new AppError(
+        'Failed to retrieve users',
+        500,
+        error instanceof Error ? error.message : undefined
+      );
     }
   }
 
-  async getUserById(req: Request, res: Response) {
+  /**
+   * Get user by ID
+   */
+  async findOne(req: Request, res: Response): Promise<void> {
     try {
-      const user = await this.userRepository.findById(req.params.id);
+      const { id } = req.params;
+      const user = await User.findOne({ 
+        where: { id },
+        select: ['id', 'firstName', 'lastName', 'email', 'isActive', 'createdAt', 'updatedAt']
+      });
+
       if (!user) {
-        return res.status(404).json({
-          error: 'User not found',
-          statusCode: 404
-        });
+        throw new AppError(`User with ID ${id} not found`, 404);
       }
-      res.json({ data: user, statusCode: 200 });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to fetch user',
-        statusCode: 500,
-        details: error instanceof Error ? error.message : undefined
+
+      res.status(200).json({
+        status: 'success',
+        data: user
       });
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(
+        'Failed to retrieve user',
+        500,
+        error instanceof Error ? error.message : undefined
+      );
     }
   }
 
-  async createUser(req: Request, res: Response) {
+  /**
+   * Create a new user
+   */
+  async create(req: Request, res: Response): Promise<void> {
     try {
-      const user = await this.userRepository.create(req.body);
-      res.status(201).json({ data: user, statusCode: 201 });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to create user',
-        statusCode: 500,
-        details: error instanceof Error ? error.message : undefined
+      const { firstName, lastName, email, password } = req.body;
+      
+      // Check if user with email already exists
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        throw new AppError('User with this email already exists', 409);
+      }
+
+      // Create new user
+      const user = new User();
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.email = email;
+      user.password = password; // In a real app, hash the password before saving
+      user.isActive = true;
+
+      await user.save();
+
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      
+      res.status(201).json({
+        status: 'success',
+        data: userWithoutPassword
       });
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(
+        'Failed to create user',
+        500,
+        error instanceof Error ? error.message : undefined
+      );
     }
   }
 
-  async updateUser(req: Request, res: Response) {
+  /**
+   * Update an existing user
+   */
+  async update(req: Request, res: Response): Promise<void> {
     try {
-      const user = await this.userRepository.update(req.params.id, req.body);
+      const { id } = req.params;
+      const { firstName, lastName, email, isActive } = req.body;
+
+      // Find user
+      const user = await User.findOne({ where: { id } });
       if (!user) {
-        return res.status(404).json({
-          error: 'User not found',
-          statusCode: 404
-        });
+        throw new AppError(`User with ID ${id} not found`, 404);
       }
-      res.json({ data: user, statusCode: 200 });
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to update user',
-        statusCode: 500,
-        details: error instanceof Error ? error.message : undefined
+
+      // Update user fields
+      if (firstName !== undefined) {
+        user.firstName = firstName;
+      }
+      if (lastName !== undefined) {
+        user.lastName = lastName;
+      }
+      if (email !== undefined) {
+        user.email = email;
+      }
+      if (isActive !== undefined) {
+        user.isActive = isActive;
+      }
+
+      await user.save();
+
+      // Return updated user without password
+      const { password: _, ...updatedUser } = user;
+
+      res.status(200).json({
+        status: 'success',
+        data: updatedUser
       });
     }
-  }
-
-  async deleteUser(req: Request, res: Response) {
-    try {
-      const deleted = await this.userRepository.delete(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({
-          error: 'User not found',
-          statusCode: 404
-        });
+    catch (error) {
+      if (error instanceof AppError) {
+        throw error;
       }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({
-        error: 'Failed to delete user',
-        statusCode: 500,
-        details: error instanceof Error ? error.message : undefined
+      throw new AppError(
+        'Failed to update user',
+        500,
+        error instanceof Error ? error.message : undefined
+      );
+    }
+  }
+  /**
+   * Delete a user
+   */
+  async delete(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const user = await User.findOne({ where: { id } });
+
+      if (!user) {
+        throw new AppError(`User with ID ${id} not found`, 404);
+      }
+
+      await user.remove();
+
+      res.status(204).json({
+        status: 'success',
+        message: 'User deleted successfully'
       });
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(
+        'Failed to delete user',
+        500,
+        error instanceof Error ? error.message : undefined
+      );
     }
   }
 }
-

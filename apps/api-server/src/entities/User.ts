@@ -4,18 +4,18 @@ import { BaseEntity } from './BaseEntity';
 @Entity('users')
 export class User extends BaseEntity {
   @Column()
-  firstName: string;
+  firstName!: string;
 
   @Column()
-  lastName: string;
+  lastName!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column({ select: false })
-  password: string;
+  password!: string;
 
   @Column({ default: true })
-  isActive: boolean;
+  isActive: boolean = true;
 }
 

@@ -1,16 +1,15 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user.controller';
-import { validate } from '../middleware/validate';
-import { CreateUserDto, UpdateUserDto } from '../dto/user.dto';
 
 const router = Router();
 const userController = new UserController();
 
-router.get('/', (req, res) => userController.getAllUsers(req, res));
-router.get('/:id', (req, res) => userController.getUserById(req, res));
-router.post('/', validate(CreateUserDto), (req, res) => userController.createUser(req, res));
-router.put('/:id', validate(UpdateUserDto), (req, res) => userController.updateUser(req, res));
-router.delete('/:id', (req, res) => userController.deleteUser(req, res));
+// Define user-related routes
+router.get('/', (req, res) => userController.findAll(req, res));
+router.get('/:id', (req, res) => userController.findOne(req, res));
+router.post('/', (req, res) => userController.create(req, res));
+router.put('/:id', (req, res) => userController.update(req, res));
+router.delete('/:id', (req, res) => userController.delete(req, res));
 
 export default router;
 

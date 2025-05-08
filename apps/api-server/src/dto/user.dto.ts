@@ -3,22 +3,28 @@ import { IsEmail, IsString, MinLength, IsOptional, IsBoolean } from 'class-valid
 export class CreateUserDto {
   @IsString()
   @MinLength(2)
-  firstName: string;
+  firstName: string = '';
 
   @IsString()
   @MinLength(2)
-  lastName: string;
+  lastName: string = '';
 
   @IsEmail()
-  email: string;
+  email: string = '';
 
   @IsString()
   @MinLength(6)
-  password: string;
+  password: string = '';
 
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  constructor(partial?: Partial<CreateUserDto>) {
+    if (partial) {
+      Object.assign(this, partial);
+    }
+  }
 }
 
 export class UpdateUserDto {
@@ -44,5 +50,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  constructor(partial?: Partial<UpdateUserDto>) {
+    if (partial) {
+      Object.assign(this, partial);
+    }
+  }
 }
 
