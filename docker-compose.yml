@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: baileys_kitchen
       PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_MULTIPLE_DATABASES: "baileys_kitchen,user_service"
+      POSTGRES_MULTIPLE_DATABASES: "baileys_kitchen,user_service,product_service"
     ports:
       - "5432:5432"
     volumes:
@@ -119,6 +119,43 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+      
+  product-service:
+    build:
+      context: .
+      dockerfile: ./apps/product-service/Dockerfile
+    container_name: baileys-kitchen-product-service
+    environment:
+      NODE_ENV: development
+      PORT: 5003
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: product_service
+      DB_SYNCHRONIZE: "true"
+      DB_LOGGING: "true"
+      API_PREFIX: api/v1
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "5003:5003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount source code but exclude node_modules
+      - ./apps/product-service/src:/app/apps/product-service/src
+      - ./apps/product-service/tsconfig.json:/app/apps/product-service/tsconfig.json
+      - ./apps/product-service/nest-cli.json:/app/apps/product-service/nest-cli.json
+      # Use named volumes for node_modules
+      - product-service-node-modules:/app/node_modules
+      - product-service-app-node-modules:/app/apps/product-service/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:5003/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   baileys_postgres_data:
@@ -130,6 +167,10 @@ volumes:
     name: user-service-node-modules
   user-service-app-node-modules:
     name: user-service-app-node-modules
+  product-service-node-modules:
+    name: product-service-node-modules
+  product-service-app-node-modules:
+    name: product-service-app-node-modules
 
 networks:
   default:
