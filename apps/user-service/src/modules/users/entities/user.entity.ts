@@ -23,6 +23,12 @@ export class User {
   @Column()
   lastName: string;
 
+  @Column({ nullable: true })
+  passwordResetToken: string;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  passwordResetExpires: Date;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

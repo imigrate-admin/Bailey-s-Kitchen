@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 
 export class LoginDto {
@@ -19,3 +19,24 @@ export class ForgotPasswordDto {
   email: string;
 }
 
+export class ResetPasswordDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Reset token is required' })
+  token: string;
+
+  @IsString({ message: 'Password must be a string' })
+  @IsNotEmpty({ message: 'Password is required' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  newPassword: string;
+}
+
+export class ChangePasswordDto {
+  @IsString({ message: 'Current password must be a string' })
+  @IsNotEmpty({ message: 'Current password is required' })
+  currentPassword: string;
+
+  @IsString({ message: 'New password must be a string' })
+  @IsNotEmpty({ message: 'New password is required' })
+  @MinLength(8, { message: 'New password must be at least 8 characters long' })
+  newPassword: string;
+}

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -43,5 +43,33 @@ export class UsersService {
     }
     
     return user;
+  }
+
+  async savePasswordResetToken(
+    userId: string,
+    resetToken: string | null,
+    resetTokenExpiry: Date | null,
+  ): Promise<void> {
+    await this.usersRepository.update(userId, {
+      passwordResetToken: resetToken,
+      passwordResetExpires: resetTokenExpiry,
+    });
+  }
+
+  async findByResetToken(resetToken: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: {
+        passwordResetToken: resetToken,
+        passwordResetExpires: MoreThan(new Date()),
+      },
+    });
+  }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.usersRepository.update(userId, {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    });
   }
 }

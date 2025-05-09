@@ -1,8 +1,10 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/auth.dto';
+import { EmailService } from '../email/email.service';
+import { LoginDto, ResetPasswordDto } from './dto/auth.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
 
@@ -11,6 +13,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -78,14 +81,72 @@ export class AuthService {
       return { success: true, message: 'If your email exists in our system, you will receive a password reset link.' };
     }
     
-    // In a real implementation, generate token and send email
-    // const token = this.generatePasswordResetToken();
-    // await this.usersService.savePasswordResetToken(user.id, token);
-    // await this.emailService.sendPasswordResetEmail(user.email, token);
+    // Generate a random reset token
+    const resetToken = randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
     
+    // Hash the token before saving it
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+    
+    // Save the hashed token and expiry
+    await this.usersService.savePasswordResetToken(user.id, hashedToken, resetTokenExpiry);
+    
+    try {
+      // Send the reset email
+      await this.emailService.sendPasswordResetEmail(email, resetToken);
+      
+      return {
+        success: true,
+        message: 'If your email exists in our system, you will receive a password reset link.'
+      };
+    } catch (error) {
+      // If email fails, clean up the token
+      await this.usersService.savePasswordResetToken(user.id, null, null);
+      throw new Error('Failed to send password reset email');
+    }
+  }
+
+  async resetPassword(resetToken: string, newPassword: string) {
+    // Find user with valid reset token
+    const user = await this.usersService.findByResetToken(resetToken);
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    // Check if token is expired
+    if (user.passwordResetExpires < new Date()) {
+      throw new BadRequestException('Reset token has expired');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear reset token
+    await this.usersService.updatePassword(user.id, hashedPassword);
+
     return {
       success: true,
-      message: 'If your email exists in our system, you will receive a password reset link.'
+      message: 'Password has been reset successfully'
+    };
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.usersService.findById(userId);
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Hash and save new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.updatePassword(user.id, hashedPassword);
+
+    return {
+      success: true,
+      message: 'Password has been changed successfully'
     };
   }
 }

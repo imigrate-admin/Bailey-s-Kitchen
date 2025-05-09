@@ -23,6 +23,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.15.0",
+    "@types/nodemailer": "^6.4.17",
     "@typescript-eslint/eslint-plugin": "^5.54.1",
     "@typescript-eslint/parser": "^5.54.1",
     "eslint": "^8.36.0",
@@ -46,6 +47,8 @@
     "*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "nodemailer": "^6.10.1"
   }
 }
-
