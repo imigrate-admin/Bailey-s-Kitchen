@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter, Montserrat } from 'next/font/google';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
+import AuthProvider from './auth-provider';
 
 // Font configuration
 const inter = Inter({
@@ -42,14 +43,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`}>
-      <body className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
+      <body>
+        <AuthProvider>
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
 }
-

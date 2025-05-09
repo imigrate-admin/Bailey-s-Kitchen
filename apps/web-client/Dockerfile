@@ -1,24 +1,18 @@
-FROM node:18-alpine AS base
+FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
+# Copy package files
+COPY package*.json ./
+
 # Install dependencies
-COPY package.json ./
 RUN npm install
 
-# Copy all files
+# Copy the rest of the application
 COPY . .
 
-# Build the Next.js application
+# Build the application
 RUN npm run build
 
-# Expose the port Next.js runs on
-EXPOSE 3000
-
-# Set environment variables
-ENV NODE_ENV=production
-
-# Start the Next.js application
-CMD ["npm", "start"]
-
+# Start the application in development mode
+CMD ["npm", "run", "dev"]

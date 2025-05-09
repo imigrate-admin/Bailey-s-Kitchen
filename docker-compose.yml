@@ -39,7 +39,7 @@ services:
       DB_SYNCHRONIZE: "true"
       DB_LOGGING: "true"
       API_PREFIX: /api/v1
-      CORS_ORIGIN: http://localhost:3000,http://web-client:3000
+      CORS_ORIGIN: http://localhost:3000
     ports:
       - "5001:5001"
     depends_on:
@@ -88,7 +88,7 @@ services:
       DB_SYNCHRONIZE: "true"
       DB_LOGGING: "true"
       API_PREFIX: api/v1
-      CORS_ORIGIN: http://localhost:3000,http://web-client:3000
+      CORS_ORIGIN: http://localhost:3000
       JWT_SECRET: your-super-secret-jwt-key-that-should-be-long-and-secure
       JWT_EXPIRES_IN: 1h
       JWT_REFRESH_EXPIRES_IN_DAYS: 30
