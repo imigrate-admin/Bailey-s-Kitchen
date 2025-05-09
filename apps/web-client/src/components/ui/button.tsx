@@ -1,30 +1,40 @@
-'use client';
+"use client"
 
 import React, { forwardRef } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /**
-   * The variant of the button
+   * Button variant
    * @default 'primary'
    */
   variant?: ButtonVariant;
   
   /**
-   * The size of the button
+   * Button size
    * @default 'md'
    */
   size?: ButtonSize;
   
   /**
-   * Whether the button should take up the full width of its container
+   * Whether the button should take full width
    * @default false
    */
   fullWidth?: boolean;
+  
+  /**
+   * Icon to display at the start of the button
+   */
+  startIcon?: React.ReactNode;
+  
+  /**
+   * Icon to display at the end of the button
+   */
+  endIcon?: React.ReactNode;
   
   /**
    * Whether the button is in a loading state
@@ -33,81 +43,63 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   isLoading?: boolean;
   
   /**
-   * Icon to display before the button text
-   */
-  leftIcon?: React.ReactNode;
-  
-  /**
-   * Icon to display after the button text
-   */
-  rightIcon?: React.ReactNode;
-  
-  /**
-   * If provided, the button will render as an anchor element
+   * URL to navigate to when the button is clicked (turns the button into a link)
    */
   href?: string;
   
   /**
-   * Additional classes to apply to the button
-   */
-  className?: string;
-  
-  /**
-   * Whether the link should be opened in a new tab
+   * Whether the link should open in a new tab
    * @default false
    */
   openInNewTab?: boolean;
 }
 
 /**
- * Primary UI component for user interaction
+ * Button component that can be rendered as a button or a link
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
+  startIcon,
+  endIcon,
   isLoading = false,
-  leftIcon,
-  rightIcon,
   href,
+  openInNewTab,
   className,
-  children,
   disabled,
-  openInNewTab = false,
+  children,
   ...props
 }, ref) => {
-  // Base button classes
-  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
-  
   // Variant classes
   const variantClasses = {
-    primary: 'bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700',
-    secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 active:bg-secondary-700',
-    outline: 'border border-gray-300 bg-transparent hover:bg-gray-50 text-gray-700',
+    primary: 'bg-primary-500 hover:bg-primary-600 text-white',
+    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
+    outline: 'bg-transparent border border-gray-300 hover:bg-gray-50 text-gray-700',
     ghost: 'bg-transparent hover:bg-gray-100 text-gray-700',
-    link: 'bg-transparent underline-offset-4 hover:underline text-primary-500 p-0 h-auto',
+    link: 'bg-transparent text-primary-500 hover:text-primary-600 hover:underline p-0 h-auto',
+    danger: 'bg-red-500 hover:bg-red-600 text-white',
   };
   
   // Size classes
   const sizeClasses = {
-    sm: 'h-9 px-3 text-sm',
-    md: 'h-10 px-4 text-base',
-    lg: 'h-12 px-6 text-lg',
+    sm: 'h-8 px-3 text-xs',
+    md: 'h-10 px-4 text-sm',
+    lg: 'h-12 px-6 text-base',
   };
   
-  // Full width classes
-  const widthClasses = fullWidth ? 'w-full' : '';
-  
-  // Combine all classes
-  const buttonClasses = cn(
-    baseClasses,
+  // Common classes
+  const baseClasses = cn(
+    'inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
+    'disabled:opacity-50 disabled:pointer-events-none',
+    variant !== 'link' && sizeClasses[size],
     variantClasses[variant],
-    sizeClasses[size],
-    widthClasses,
+    fullWidth && 'w-full',
+    isLoading && 'opacity-70 pointer-events-none',
     className
   );
   
-  // Loading indicator
+  // Loading spinner
   const LoadingSpinner = () => (
     <svg
       className="animate-spin -ml-1 mr-2 h-4 w-4"
@@ -131,35 +123,39 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     </svg>
   );
   
+  // Button content
+  const ButtonContent = () => (
+    <>
+      {isLoading && <LoadingSpinner />}
+      {!isLoading && startIcon && <span className="mr-2">{startIcon}</span>}
+      {children}
+      {!isLoading && endIcon && <span className="ml-2">{endIcon}</span>}
+    </>
+  );
+  
   // Render as link if href is provided
   if (href) {
     return (
       <Link
         href={href}
-        className={buttonClasses}
+        className={baseClasses}
         target={openInNewTab ? '_blank' : undefined}
         rel={openInNewTab ? 'noopener noreferrer' : undefined}
       >
-        {isLoading && <LoadingSpinner />}
-        {!isLoading && leftIcon && <span className="mr-2">{leftIcon}</span>}
-        {children}
-        {!isLoading && rightIcon && <span className="ml-2">{rightIcon}</span>}
+        <ButtonContent />
       </Link>
     );
   }
   
-  // Otherwise render as button
+  // Render as button otherwise
   return (
     <button
       ref={ref}
-      className={buttonClasses}
+      className={baseClasses}
       disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading && <LoadingSpinner />}
-      {!isLoading && leftIcon && <span className="mr-2">{leftIcon}</span>}
-      {children}
-      {!isLoading && rightIcon && <span className="ml-2">{rightIcon}</span>}
+      <ButtonContent />
     </button>
   );
 });
@@ -167,4 +163,3 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
 Button.displayName = 'Button';
 
 export default Button;
-

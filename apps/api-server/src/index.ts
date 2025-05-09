@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { AppDataSource } from './config/database';
 import routes from './routes';
-import { ErrorResponse } from './types';
+import { errorHandler } from './middleware/error-handler';
 
 // Load environment variables
 dotenv.config();
@@ -24,8 +24,26 @@ AppDataSource.initialize()
 
 // Middleware
 app.use(helmet());
+
+// Parse CORS origins from environment variable
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(origin => origin.trim());
+
+// Configure CORS with dynamic origin validation
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000'
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if the origin is in our allowed list
+    if (corsOrigins.indexOf(origin) !== -1) {
+      // Return the specific matching origin
+      return callback(null, origin);
+    } else {
+      // If not in allowed origins, reject
+      return callback(new Error(`CORS policy: Origin ${origin} not allowed`), false);
+    }
+  },
+  credentials: true
 }));
 app.use(express.json());
 
@@ -41,16 +59,8 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  const errorResponse: ErrorResponse = {
-    error: 'Internal Server Error',
-    statusCode: 500,
-    details: process.env.NODE_ENV === 'development' ? err.message : undefined
-  };
-  res.status(500).json(errorResponse);
-});
+// Global error handling middleware
+app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 3001;
