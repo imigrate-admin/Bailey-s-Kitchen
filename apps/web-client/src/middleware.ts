@@ -4,6 +4,7 @@ import { getToken } from 'next-auth/jwt';
 
 // List of paths that are accessible to the public (no auth required)
 const publicPaths = [
+  '/',              // Root path is explicitly public
   '/login',
   '/register',
   '/forgot-password',
@@ -23,10 +24,16 @@ const authOnlyPaths = [
  * Check if a path is public (no auth required)
  */
 const isPublicPath = (path: string): boolean => {
+  // Add logging to help diagnose path issues
+  console.log('Middleware - Checking path access:', { 
+    path, 
+    isRoot: path === '/',
+    isAuthPath: path.startsWith('/api/auth/'),
+  });
+  
   return publicPaths.some(publicPath => 
     path === publicPath || 
     path.startsWith(`${publicPath}/`) ||
-    path === '/' || // Homepage is public
     path.startsWith('/api/auth/') // Auth API routes are public
   );
 };
@@ -46,6 +53,14 @@ const isAuthOnlyPath = (path: string): boolean => {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Log each request that hits the middleware
+  console.log('Middleware - Processing request:', {
+    pathname,
+    method: request.method,
+    url: request.url,
+    time: new Date().toISOString(),
+  });
+  
   // Get auth token from session
   const token = await getToken({
     req: request,
@@ -54,17 +69,30 @@ export async function middleware(request: NextRequest) {
   
   const isAuthenticated = !!token;
   
+  // Log authentication status
+  console.log('Middleware - Auth status:', { 
+    isAuthenticated, 
+    hasToken: !!token, 
+    userId: token?.sub || 'none',
+  });
+  
   // Redirect authenticated users away from login/register pages
   if (isAuthenticated && isAuthOnlyPath(pathname)) {
-    return NextResponse.redirect(new URL('/', request.url));
+    console.log('Middleware - Redirecting authenticated user from auth page to home');
+    const homeUrl = new URL('/', request.url);
+    return NextResponse.redirect(homeUrl);
   }
   
   // Redirect unauthenticated users to login page if they try to access protected routes
   if (!isAuthenticated && !isPublicPath(pathname)) {
-    const url = new URL('/login', request.url);
-    url.searchParams.set('callbackUrl', encodeURI(request.url));
-    return NextResponse.redirect(url);
+    console.log('Middleware - Redirecting unauthenticated user to login');
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('callbackUrl', encodeURI(request.url));
+    return NextResponse.redirect(loginUrl);
   }
+  
+  // Allow access to public routes and protected routes for authenticated users
+  console.log('Middleware - Request allowed to proceed');
   
   // Continue with the request
   return NextResponse.next();
