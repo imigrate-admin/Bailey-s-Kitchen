@@ -13,6 +13,7 @@ export const authOptions: AuthOptions = {
       async authorize(credentials) {
         try {
           // Make a request to the backend API
+          // NEXT_PUBLIC_API_URL already includes /api/v1, so don't add it again
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -25,11 +26,19 @@ export const authOptions: AuthOptions = {
           // Handle errors from API
           if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Authentication failed');
+            // Extract the error message from the API response
+            const errorMessage = error.error || error.message || 'Authentication failed';
+            throw new Error(errorMessage);
           }
           
           // Parse the response
-          const data: AuthTokens = await response.json();
+          const data = await response.json();
+          
+          // Check if response has the expected structure
+          if (!data.accessToken || !data.user || !data.user.id) {
+            console.error('Unexpected API response structure:', data);
+            throw new Error('Received invalid data from authentication server');
+          }
           
           // Return the user data in the format NextAuth expects
           return {
@@ -40,9 +49,14 @@ export const authOptions: AuthOptions = {
             lastName: data.user.lastName,
             accessToken: data.accessToken,
           };
-        } catch (error) {
+        } catch (error: any) {
           console.error('Auth error:', error);
-          return null;
+          // Return error message to display to the user
+          if (error.message) {
+            throw new Error(error.message);
+          } else {
+            throw new Error('Authentication failed. Please check your credentials and try again.');
+          }
         }
       }
     })
