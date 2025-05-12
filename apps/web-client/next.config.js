@@ -12,6 +12,18 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.baileys-kitchen.com',
+        port: '',
+        pathname: '/products/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/baileys-kitchen-assets/**',
+      }
     ],
   },
   env: {

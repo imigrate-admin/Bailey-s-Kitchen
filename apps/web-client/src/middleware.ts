@@ -10,6 +10,11 @@ const publicPaths = [
   '/forgot-password',
   '/reset-password',
   '/api/auth',
+  '/api/auth/_log', // Explicitly allow NextAuth debug logging endpoint
+  '/products',      // Public product listing
+  '/api/products',  // Public product API routes
+  '/categories',    // Public category browsing
+  '/api/categories', // Public category API routes
 ];
 
 // List of paths that should only be accessible to unauthenticated users
@@ -29,12 +34,18 @@ const isPublicPath = (path: string): boolean => {
     path, 
     isRoot: path === '/',
     isAuthPath: path.startsWith('/api/auth/'),
+    isProductPath: path.startsWith('/products') || path.startsWith('/api/products'),
+    isCategoryPath: path.startsWith('/categories') || path.startsWith('/api/categories'),
   });
   
   return publicPaths.some(publicPath => 
     path === publicPath || 
     path.startsWith(`${publicPath}/`) ||
-    path.startsWith('/api/auth/') // Auth API routes are public
+    path.startsWith('/api/auth/') || // Auth API routes are public
+    path.startsWith('/products/') || // Individual product pages are public
+    path.startsWith('/api/products/') || // Product API endpoints are public
+    path.startsWith('/categories/') || // Category pages are public
+    path.startsWith('/api/categories/') // Category API endpoints are public
   );
 };
 

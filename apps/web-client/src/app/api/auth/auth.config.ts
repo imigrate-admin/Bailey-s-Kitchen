@@ -2,20 +2,24 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { AuthTokens } from '@/types/auth';
 
-// Define server-side API URL explicitly for Docker networking
-const SERVER_API_URL = 'http://api:5001/api/v1';
-// Use NEXT_PUBLIC_API_URL for client-side requests
-const CLIENT_API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-// For debugging purposes, log the environment variables related to API URLs
-console.log('Auth Configuration:', {
-  SERVER_API_URL,
-  CLIENT_API_URL: process.env.NEXT_PUBLIC_API_URL,
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-});
+// Determine the correct API URL based on the environment
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
 
 // Helper function to determine if code is running server-side
 const isServerSide = () => typeof window === 'undefined';
+
+// Helper function to get the API URL - using the same URL for both client and server
+// This works because of Docker port mapping
+const getApiUrl = () => API_URL;
+
+// For debugging purposes, log the API URL configuration
+console.log('Auth Configuration:', {
+  API_URL,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  IS_SERVER: isServerSide(),
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  NODE_ENV: process.env.NODE_ENV
+});
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -23,32 +27,60 @@ export const authOptions: NextAuthOptions = {
       name: 'Credentials',
       credentials: {
         email: { label: "Email", type: "email", placeholder: "Enter your email" },
-        password: { label: "Password", type: "password", placeholder: "Enter your password" }
+        password: { label: "Password", type: "password", placeholder: "Enter your password" },
+        firstName: { label: "First Name", type: "text" }, // Added for registration
+        lastName: { label: "Last Name", type: "text" }, // Added for registration
+        isRegister: { label: "Is Register", type: "text" } // To differentiate between login and register
       },
       async authorize(credentials) {
         try {
-          // Determine which API URL to use based on execution environment
-          const apiUrl = isServerSide() ? SERVER_API_URL : CLIENT_API_URL;
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error('Email and password are required');
+          }
+
+          // Determine if this is a registration request
+          const isRegister = credentials.isRegister === 'true';
+          const apiUrl = getApiUrl();
           
-          // Log detailed authentication request information
           console.log(`Auth request details:`, {
             apiUrl,
-            environment: isServerSide() ? 'server-side' : 'client-side',
-            endpoint: `${apiUrl}/auth/login`,
+            endpoint: isRegister ? `${apiUrl}/auth/register` : `${apiUrl}/auth/login`,
             hasCredentials: !!credentials,
-            email: credentials?.email ? `${credentials.email.substring(0, 3)}...` : 'not provided',
+            isRegister,
+            isServerSide: isServerSide(),
+            email: credentials.email ? `${credentials.email.substring(0, 3)}...` : 'not provided',
             timestamp: new Date().toISOString()
           });
           
-          // Make a request to the backend API
-          const response = await fetch(`${apiUrl}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: credentials?.email,
-              password: credentials?.password,
-            }),
-          });
+          let response;
+          
+          if (isRegister) {
+            // Handle registration
+            if (!credentials.firstName || !credentials.lastName) {
+              throw new Error('First name and last name are required for registration');
+            }
+
+            response = await fetch(`${apiUrl}/auth/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: credentials.email,
+                password: credentials.password,
+                firstName: credentials.firstName,
+                lastName: credentials.lastName,
+              }),
+            });
+          } else {
+            // Handle login
+            response = await fetch(`${apiUrl}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: credentials.email,
+                password: credentials.password,
+              }),
+            });
+          }
           
           // Handle errors from API
           if (!response.ok) {
@@ -91,7 +123,7 @@ export const authOptions: NextAuthOptions = {
             message: error.message,
             stack: error.stack,
             context: isServerSide() ? 'server-side' : 'client-side',
-            apiUrl: isServerSide() ? SERVER_API_URL : CLIENT_API_URL,
+            apiUrl: API_URL,
             credentials: credentials ? { email: credentials.email, hasPassword: !!credentials.password } : 'No credentials',
           });
           
@@ -171,57 +203,37 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Log the redirect attempt with detailed information
+      // Log the redirect attempt
       console.log('Redirect callback triggered:', {
         url,
-        baseUrl,
-        isRelative: url.startsWith('/'),
-        isBaseUrl: url.startsWith(baseUrl),
-        containsAuthSignin: url.includes('/api/auth/signin'),
-        containsLogin: url.includes('/login')
+        baseUrl
       });
       
-      // After successful login, always redirect to the home page
-      if (url.includes('/api/auth/signin') || url.includes('/login')) {
-        console.log(`Login detected, redirecting to home page: ${baseUrl}/`);
+      // After successful login or registration, always redirect to the home page
+      if (url.includes('/api/auth/signin') || url.includes('/login') || url.includes('/register')) {
+        console.log(`Auth action detected, redirecting to home page: ${baseUrl}/`);
         return `${baseUrl}/`;
       }
       
-      // For callback URLs that include callbackUrl parameter, extract and redirect to it
+      // For callback URLs with callbackUrl parameter
       const callbackParam = new URL(url, baseUrl).searchParams.get('callbackUrl');
       if (callbackParam) {
-        try {
-          const decodedCallback = decodeURIComponent(callbackParam);
-          console.log(`Found callbackUrl param: ${decodedCallback}`);
-          
-          // Validate the callback URL is safe
-          if (decodedCallback.startsWith(baseUrl) || decodedCallback.startsWith('/')) {
-            const finalUrl = decodedCallback.startsWith('/') 
-              ? `${baseUrl}${decodedCallback}`
-              : decodedCallback;
-            console.log(`Redirecting to decoded callback: ${finalUrl}`);
-            return finalUrl;
-          }
-        } catch (error) {
-          console.error('Error processing callback URL:', error);
+        const decodedCallback = decodeURIComponent(callbackParam);
+        
+        // Validate the callback URL is safe
+        if (decodedCallback.startsWith(baseUrl) || decodedCallback.startsWith('/')) {
+          return decodedCallback.startsWith('/') 
+            ? `${baseUrl}${decodedCallback}`
+            : decodedCallback;
         }
       }
       
-      // Default NextAuth behavior
-      if (url.startsWith(baseUrl)) {
-        console.log(`Redirecting to URL with baseUrl: ${url}`);
-        return url;
-      }
+      // Standard URL handling
+      if (url.startsWith(baseUrl)) return url;
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
       
-      if (url.startsWith('/')) {
-        const redirectUrl = `${baseUrl}${url}`;
-        console.log(`Redirecting to relative URL: ${redirectUrl}`);
-        return redirectUrl;
-      }
-      
-      // Default fallback: redirect to home page
-      console.log(`Redirecting to default home page: ${baseUrl}/`);
-      return `${baseUrl}/`;
+      // Default fallback to home page
+      return baseUrl;
     },
   },
   session: {
@@ -230,4 +242,41 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET || 'a-very-secret-key-that-should-be-in-env',
   debug: process.env.NODE_ENV === 'development',
+  events: {
+    async signIn({ user, account, profile, isNewUser }) {
+      console.log('User signed in:', {
+        userId: user.id,
+        isNewUser,
+        provider: account?.provider
+      });
+    },
+    async signOut({ token, session }) {
+      console.log('User signed out');
+    },
+    async createUser({ user }) {
+      console.log('New user created:', { userId: user.id });
+    },
+    async linkAccount({ user, account, profile }) {
+      console.log('Account linked:', {
+        userId: user.id,
+        provider: account.provider
+      });
+    },
+    async session({ session, token }) {
+      console.log('Session updated:', { userId: session.user?.id });
+    }
+  },
+  logger: {
+    error(code, ...message) {
+      console.error('NextAuth error:', { code, message });
+    },
+    warn(code, ...message) {
+      console.warn('NextAuth warning:', { code, message });
+    },
+    debug(code, ...message) {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('NextAuth debug:', { code, message });
+      }
+    },
+  },
 };
