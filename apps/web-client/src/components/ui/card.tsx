@@ -42,6 +42,8 @@ export interface CardMediaProps extends React.HTMLAttributes<HTMLDivElement> {
   aspectRatio?: '16:9' | '4:3' | '1:1' | 'auto';
   position?: 'top' | 'bottom' | 'center';
   fill?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -292,6 +294,8 @@ const CardMedia = forwardRef<HTMLDivElement, CardMediaProps>(({
   aspectRatio = '16:9',
   position = 'center',
   fill = false,
+  width,
+  height,
   ...props
 }, ref) => {
   const aspectRatioClasses = {
@@ -315,6 +319,8 @@ const CardMedia = forwardRef<HTMLDivElement, CardMediaProps>(({
         src={src} 
         alt={alt} 
         fill={fill}
+        width={!fill ? width || 500 : undefined}
+        height={!fill ? height || 500 : undefined}
         className={cn(
           'object-cover w-full h-full',
           position === 'top' && 'object-top',
