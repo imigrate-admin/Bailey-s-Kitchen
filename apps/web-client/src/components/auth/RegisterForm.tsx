@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,7 +53,9 @@ export interface RegisterFormProps {
 
 export function RegisterForm({ onSuccess, redirectUrl = '/login' }: RegisterFormProps) {
   const router = useRouter();
-  const { register, isLoading, error, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -76,14 +79,37 @@ export function RegisterForm({ onSuccess, redirectUrl = '/login' }: RegisterForm
     // Remove confirmPassword before sending to API
     const { confirmPassword, ...registrationData } = data;
     
-    const success = await register(registrationData);
+    setIsLoading(true);
+    setError(null);
     
-    if (success) {
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push(redirectUrl);
+    try {
+      const result = await signIn('credentials', {
+        ...registrationData,
+        isRegister: 'true', // Add this flag to indicate registration
+        redirect: false,
+        callbackUrl: '/'
+      });
+
+      if (result?.error) {
+        setError(result.error);
+        return false;
       }
+
+      if (result?.ok) {
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push('/');
+        }
+        return true;
+      }
+
+      return false;
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 

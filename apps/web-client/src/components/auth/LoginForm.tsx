@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,7 +36,9 @@ export interface LoginFormProps {
 
 export function LoginForm({ onSuccess, redirectUrl = '/' }: LoginFormProps) {
   const router = useRouter();
-  const { login, isLoading, error, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -53,14 +56,37 @@ export function LoginForm({ onSuccess, redirectUrl = '/' }: LoginFormProps) {
   }, [isAuthenticated, router, redirectUrl]);
 
   const onSubmit = async (data: LoginFormValues) => {
-    const success = await login(data);
+    setIsLoading(true);
+    setError(null);
     
-    if (success) {
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push(redirectUrl);
+    try {
+      const result = await signIn('credentials', {
+        ...data,
+        isRegister: 'false', // Explicitly set to false for login
+        redirect: false,
+        callbackUrl: redirectUrl
+      });
+
+      if (result?.error) {
+        setError(result.error);
+        return false;
       }
+
+      if (result?.ok) {
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push(redirectUrl);
+        }
+        return true;
+      }
+
+      return false;
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
