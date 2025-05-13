@@ -1,7 +1,38 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
+// Define the API error response structure
+interface ApiErrorResponse {
+  message: string;
+  code?: string;
+  errors?: Record<string, string[]>; // Field validation errors
+  status?: number;
+}
+
 // Get the API URL from environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
+// In Docker, services communicate via their service names, not localhost
+const getApiUrl = () => {
+  const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
+  
+  // Default URL for local development
+  if (!NEXT_PUBLIC_API_URL) {
+    return 'http://localhost:5001/api/v1';
+  }
+  
+  // When running in Docker, if the URL includes localhost but we're on the server,
+  // replace localhost with the service name
+  if (NEXT_PUBLIC_API_URL.includes('localhost') && typeof window === 'undefined') {
+    return NEXT_PUBLIC_API_URL.replace('http://localhost', 'http://api');
+  }
+  
+  return NEXT_PUBLIC_API_URL;
+};
+
+const API_URL = getApiUrl();
+
+// Log the API URL being used (helpful for debugging)
+if (process.env.NODE_ENV === 'development') {
+  console.log('API URL:', API_URL);
+}
 
 /**
  * Generic API error class
@@ -46,9 +77,10 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
+  (error: AxiosError<ApiErrorResponse>) => {
     if (error.response) {
       const status = error.response.status;
+      const errorData = error.response.data;
       
       // Handle unauthorized errors
       if (status === 401) {
@@ -58,9 +90,9 @@ api.interceptors.response.use(
       }
       
       throw new APIError(
-        error.response.data?.message || 'An error occurred',
+        errorData?.message || 'An error occurred',
         status,
-        error.response.data?.code || 'API_ERROR'
+        errorData?.code || 'API_ERROR'
       );
     } else if (error.request) {
       throw new APIError(
@@ -91,7 +123,7 @@ export const productApi = {
         params: category ? { category } : undefined
       });
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching products:', error);
       throw error instanceof APIError 
         ? error 
@@ -108,7 +140,7 @@ export const productApi = {
     try {
       const { data } = await api.get(`/products/${id}`);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching product:', error);
       if (error instanceof APIError && error.status === 404) {
         throw new APIError('Product not found', 404, 'PRODUCT_NOT_FOUND');
@@ -128,7 +160,7 @@ export const productApi = {
         params: { q: query }
       });
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching products:', error);
       throw error instanceof APIError 
         ? error 

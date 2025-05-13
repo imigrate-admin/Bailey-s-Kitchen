@@ -21,6 +21,9 @@ export function ProductCard({ product }: ProductCardProps) {
     ? 'https://schema.org/InStock' 
     : 'https://schema.org/OutOfStock';
 
+  // Ensure price is a valid number
+  const price = typeof product.price === 'number' ? product.price : 0;
+
   return (
     <Card variant="interactive" className="h-full" {...productSchemaProps}>
       <Link href={`/products/${product.id}`}>
@@ -28,6 +31,8 @@ export function ProductCard({ product }: ProductCardProps) {
           src={product.imageUrl || '/images/product-placeholder.jpg'}
           alt={product.name}
           aspectRatio="1:1"
+          width={400}
+          height={400}
           className="transition-transform duration-300 hover:scale-105"
         />
         <Card.Body className="p-4">
@@ -51,8 +56,8 @@ export function ProductCard({ product }: ProductCardProps) {
               itemType="https://schema.org/Offer"
             >
               <meta itemProp="priceCurrency" content="USD" />
-              <span itemProp="price" content={product.price.toString()}>
-                ${product.price.toFixed(2)}
+              <span itemProp="price" content={price.toString()}>
+                ${price.toFixed(2)}
               </span>
               <meta itemProp="availability" content={availability} />
             </span>
@@ -71,4 +76,3 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
-

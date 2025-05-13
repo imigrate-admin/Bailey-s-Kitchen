@@ -105,9 +105,16 @@ function Products({ initialProducts }: ProductsProps) {
       try {
         setLoading(true);
         setError(null);
-        const data = await productApi.getProducts(
-          categoryParam || undefined
-        );
+        
+        // Only pass valid pet category to the API call
+        // If 'ALL' or null/undefined, don't pass a category filter
+        let validCategory: PetCategory | undefined = undefined;
+        
+        if (categoryParam === 'DOG' || categoryParam === 'CAT') {
+          validCategory = categoryParam;
+        }
+        
+        const data = await productApi.getProducts(validCategory);
         setProducts(data);
       } catch (err) {
         console.error('Error loading products:', err);

@@ -1,4 +1,4 @@
-import { apiRequest } from '../lib/api';
+import api, { APIError } from '../lib/api';
 import { ApiResponse, Order } from '../types';
 
 interface CreateOrderData {
@@ -39,76 +39,110 @@ export const orderService = {
   /**
    * Create a new order from the current cart
    */
-  async createOrder(data: CreateOrderData): Promise<ApiResponse<Order>> {
-    return apiRequest<ApiResponse<Order>>({
-      method: 'POST',
-      url: '/orders',
-      data,
-    });
+  async createOrder(orderData: CreateOrderData): Promise<Order> {
+    try {
+      const { data } = await api.post<ApiResponse<Order>>('/orders', orderData);
+      return data.data;
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to create order', 500, 'ORDER_ERROR');
+    }
   },
 
   /**
    * Get order by ID
    */
-  async getOrderById(id: string): Promise<ApiResponse<Order>> {
-    return apiRequest<ApiResponse<Order>>({
-      method: 'GET',
-      url: `/orders/${id}`,
-    });
+  async getOrderById(id: string): Promise<Order> {
+    try {
+      const { data } = await api.get<ApiResponse<Order>>(`/orders/${id}`);
+      return data.data;
+    } catch (error: any) {
+      console.error('Error fetching order:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to fetch order', 500, 'ORDER_ERROR');
+    }
   },
 
   /**
    * Get all orders for the current user
    */
-  async getOrders(page = 1, limit = 10): Promise<ApiResponse<PaginatedResponse<Order>>> {
-    return apiRequest<ApiResponse<PaginatedResponse<Order>>>({
-      method: 'GET',
-      url: '/orders',
-      params: { page, limit },
-    });
+  async getOrders(page = 1, limit = 10): Promise<PaginatedResponse<Order>> {
+    try {
+      const { data } = await api.get<ApiResponse<PaginatedResponse<Order>>>('/orders', {
+        params: { page, limit }
+      });
+      return data.data;
+    } catch (error: any) {
+      console.error('Error fetching orders:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to fetch orders', 500, 'ORDER_ERROR');
+    }
   },
 
   /**
    * Update order status (admin only)
    */
-  async updateOrderStatus(id: string, data: OrderStatusUpdate): Promise<ApiResponse<Order>> {
-    return apiRequest<ApiResponse<Order>>({
-      method: 'PATCH',
-      url: `/orders/${id}/status`,
-      data,
-    });
+  async updateOrderStatus(id: string, statusData: OrderStatusUpdate): Promise<Order> {
+    try {
+      const { data } = await api.patch<ApiResponse<Order>>(`/orders/${id}/status`, statusData);
+      return data.data;
+    } catch (error: any) {
+      console.error('Error updating order status:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to update order status', 500, 'ORDER_ERROR');
+    }
   },
 
   /**
    * Cancel an order (if still in pending or processing status)
    */
-  async cancelOrder(id: string, reason?: string): Promise<ApiResponse<Order>> {
-    return apiRequest<ApiResponse<Order>>({
-      method: 'POST',
-      url: `/orders/${id}/cancel`,
-      data: { reason },
-    });
+  async cancelOrder(id: string, reason?: string): Promise<Order> {
+    try {
+      const { data } = await api.post<ApiResponse<Order>>(`/orders/${id}/cancel`, { reason });
+      return data.data;
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to cancel order', 500, 'ORDER_ERROR');
+    }
   },
 
   /**
    * Initiate payment process for an order
    */
-  async initiatePayment(orderId: string): Promise<ApiResponse<PaymentInitiationResponse>> {
-    return apiRequest<ApiResponse<PaymentInitiationResponse>>({
-      method: 'POST',
-      url: `/orders/${orderId}/payment`,
-    });
+  async initiatePayment(orderId: string): Promise<PaymentInitiationResponse> {
+    try {
+      const { data } = await api.post<ApiResponse<PaymentInitiationResponse>>(`/orders/${orderId}/payment`);
+      return data.data;
+    } catch (error: any) {
+      console.error('Error initiating payment:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to initiate payment', 500, 'PAYMENT_ERROR');
+    }
   },
 
   /**
    * Complete payment for an order
    */
-  async completePayment(orderId: string, paymentIntentId: string): Promise<ApiResponse<Order>> {
-    return apiRequest<ApiResponse<Order>>({
-      method: 'POST',
-      url: `/orders/${orderId}/payment/complete`,
-      data: { paymentIntentId },
-    });
+  async completePayment(orderId: string, paymentIntentId: string): Promise<Order> {
+    try {
+      const { data } = await api.post<ApiResponse<Order>>(`/orders/${orderId}/payment/complete`, { 
+        paymentIntentId 
+      });
+      return data.data;
+    } catch (error: any) {
+      console.error('Error completing payment:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to complete payment', 500, 'PAYMENT_ERROR');
+    }
   },
 
   /**
@@ -117,32 +151,57 @@ export const orderService = {
   async updateShippingAddress(
     orderId: string,
     shippingAddress: CreateOrderData['shippingAddress']
-  ): Promise<ApiResponse<Order>> {
-    return apiRequest<ApiResponse<Order>>({
-      method: 'PATCH',
-      url: `/orders/${orderId}/shipping-address`,
-      data: { shippingAddress },
-    });
+  ): Promise<Order> {
+    try {
+      const { data } = await api.patch<ApiResponse<Order>>(`/orders/${orderId}/shipping-address`, {
+        shippingAddress
+      });
+      return data.data;
+    } catch (error: any) {
+      console.error('Error updating shipping address:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to update shipping address', 500, 'ORDER_ERROR');
+    }
   },
 
   /**
    * Track order shipment
    */
-  async trackOrder(orderId: string): Promise<ApiResponse<{ trackingId: string; carrier: string; status: string; estimatedDelivery: string }>> {
-    return apiRequest<ApiResponse<{ trackingId: string; carrier: string; status: string; estimatedDelivery: string }>>({
-      method: 'GET',
-      url: `/orders/${orderId}/tracking`,
-    });
+  async trackOrder(orderId: string): Promise<{ trackingId: string; carrier: string; status: string; estimatedDelivery: string }> {
+    try {
+      const { data } = await api.get<ApiResponse<{ 
+        trackingId: string; 
+        carrier: string; 
+        status: string; 
+        estimatedDelivery: string 
+      }>>(`/orders/${orderId}/tracking`);
+      return data.data;
+    } catch (error: any) {
+      console.error('Error tracking order:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to track order', 500, 'ORDER_ERROR');
+    }
   },
 
   /**
    * Get order statistics (admin only)
    */
-  async getOrderStatistics(): Promise<ApiResponse<{ totalOrders: number; totalRevenue: number; averageOrderValue: number }>> {
-    return apiRequest<ApiResponse<{ totalOrders: number; totalRevenue: number; averageOrderValue: number }>>({
-      method: 'GET',
-      url: '/orders/statistics',
-    });
+  async getOrderStatistics(): Promise<{ totalOrders: number; totalRevenue: number; averageOrderValue: number }> {
+    try {
+      const { data } = await api.get<ApiResponse<{ 
+        totalOrders: number; 
+        totalRevenue: number; 
+        averageOrderValue: number 
+      }>>('/orders/statistics');
+      return data.data;
+    } catch (error: any) {
+      console.error('Error fetching order statistics:', error);
+      throw error instanceof APIError 
+        ? error 
+        : new APIError('Failed to fetch order statistics', 500, 'ORDER_ERROR');
+    }
   },
 };
 

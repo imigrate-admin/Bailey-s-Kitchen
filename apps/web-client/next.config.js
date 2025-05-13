@@ -38,9 +38,53 @@ const nextConfig = {
     
     if (process.env.NODE_ENV === 'development') {
       return [
+        // Handle NextAuth internal routes - do not rewrite these
+        {
+          source: '/api/auth/callback/:path*',
+          destination: '/api/auth/callback/:path*',
+        },
+        {
+          source: '/api/auth/signin',
+          destination: '/api/auth/signin',
+        },
+        {
+          source: '/api/auth/signout',
+          destination: '/api/auth/signout',
+        },
+        {
+          source: '/api/auth/session',
+          destination: '/api/auth/session',
+        },
+        {
+          source: '/api/auth/_log',
+          destination: '/api/auth/_log',
+        },
+        {
+          source: '/api/auth/error',
+          destination: '/api/auth/error',
+        },
+        {
+          source: '/api/auth/providers',
+          destination: '/api/auth/providers',
+        },
+        // Direct backend auth API calls - rewrite to include /api/v1
+        {
+          source: '/api/auth/login',
+          destination: `${baseApiUrl}/api/v1/auth/login`,
+        },
+        {
+          source: '/api/auth/register',
+          destination: `${baseApiUrl}/api/v1/auth/register`,
+        },
+        // Handle all other API routes
+        {
+          source: '/api/v1/:path*',
+          destination: `${baseApiUrl}/api/v1/:path*`,
+        },
+        // Legacy API route handling
         {
           source: '/api/:path*',
-          destination: `${baseApiUrl}/api/:path*`, // Proxy to API server
+          destination: `${baseApiUrl}/api/v1/:path*`,
         },
       ];
     }

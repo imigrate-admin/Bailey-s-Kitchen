@@ -2,23 +2,62 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { AuthTokens } from '@/types/auth';
 
+// IMMEDIATE DEBUG LOG: File loading verification
+console.log('🔄 AUTH CONFIG: Loading auth configuration file');
+
+// Generate a unique ID for correlation tracking
+const generateCorrelationId = () => `auth_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+// Global correlation ID for the current file load
+const CONFIG_CORRELATION_ID = generateCorrelationId();
+
 // Determine the correct API URL based on the environment
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
 
 // Helper function to determine if code is running server-side
 const isServerSide = () => typeof window === 'undefined';
 
-// Helper function to get the API URL - using the same URL for both client and server
-// This works because of Docker port mapping
-const getApiUrl = () => API_URL;
+// Helper function to get the appropriate URL for different contexts
+const getApiUrl = () => {
+  const url = API_URL;
+  console.log(`🔗 AUTH URL [${CONFIG_CORRELATION_ID}]: Resolved API URL: ${url} (${isServerSide() ? 'server-side' : 'client-side'})`);
+  return url;
+};
 
-// For debugging purposes, log the API URL configuration
-console.log('Auth Configuration:', {
+// Helper to get browser-safe auth endpoints that will be correctly rewritten
+const getAuthEndpoint = (path: string) => {
+  if (!isServerSide()) {
+    return `/api/auth/${path}`;
+  }
+  return `${API_URL}/auth/${path}`;
+};
+
+// Network status check function
+const checkNetworkStatus = async (url: string): Promise<{ ok: boolean; message: string }> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return { ok: response.ok, message: `Status: ${response.status} ${response.statusText}` };
+  } catch (error: any) {
+    return { ok: false, message: `Network error: ${error.name} - ${error.message}` };
+  }
+};
+
+// Initial configuration log
+console.log(`🛠️ AUTH CONFIG [${CONFIG_CORRELATION_ID}]:`, {
   API_URL,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   IS_SERVER: isServerSide(),
   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-  NODE_ENV: process.env.NODE_ENV
+  NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? '***[MASKED]***' : 'NOT SET',
+  NODE_ENV: process.env.NODE_ENV,
+  runtime: isServerSide() ? 'server' : 'client',
+  timestamp: new Date().toISOString()
 });
 
 export const authOptions: NextAuthOptions = {
@@ -28,116 +67,93 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email", placeholder: "Enter your email" },
         password: { label: "Password", type: "password", placeholder: "Enter your password" },
-        firstName: { label: "First Name", type: "text" }, // Added for registration
-        lastName: { label: "Last Name", type: "text" }, // Added for registration
-        isRegister: { label: "Is Register", type: "text" } // To differentiate between login and register
+        firstName: { label: "First Name", type: "text" },
+        lastName: { label: "Last Name", type: "text" },
+        isRegister: { label: "Is Register", type: "text" }
       },
       async authorize(credentials) {
+        const correlationId = generateCorrelationId();
+        console.log(`🔑 AUTH START [${correlationId}]: Authorization attempt initiated`);
+
         try {
           if (!credentials?.email || !credentials?.password) {
+            console.error(`❌ AUTH ERROR [${correlationId}]: Missing credentials`);
             throw new Error('Email and password are required');
           }
 
-          // Determine if this is a registration request
           const isRegister = credentials.isRegister === 'true';
-          const apiUrl = getApiUrl();
-          
-          console.log(`Auth request details:`, {
-            apiUrl,
-            endpoint: isRegister ? `${apiUrl}/auth/register` : `${apiUrl}/auth/login`,
-            hasCredentials: !!credentials,
-            isRegister,
-            isServerSide: isServerSide(),
-            email: credentials.email ? `${credentials.email.substring(0, 3)}...` : 'not provided',
-            timestamp: new Date().toISOString()
-          });
-          
-          let response;
-          
-          if (isRegister) {
-            // Handle registration
-            if (!credentials.firstName || !credentials.lastName) {
-              throw new Error('First name and last name are required for registration');
-            }
+          const authPath = isRegister ? 'register' : 'login';
+          const endpoint = getAuthEndpoint(authPath);
 
-            response = await fetch(`${apiUrl}/auth/register`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+          console.log(`🔍 AUTH REQUEST [${correlationId}]:`, {
+            endpoint,
+            isRegister,
+            email: credentials.email ? `${credentials.email.substring(0, 3)}...` : 'not provided',
+            timestamp: new Date().toISOString(),
+            userAgent: isServerSide() ? 'server-side' : window.navigator.userAgent
+          });
+
+          const healthCheckUrl = isServerSide() ? `${API_URL}/health` : '/api/health';
+          const networkStatus = await checkNetworkStatus(healthCheckUrl);
+          console.log(`🔄 AUTH NETWORK [${correlationId}]: Status - ${networkStatus.ok ? '✅ Connected' : '❌ Failed'}, ${networkStatus.message}`);
+
+          if (!networkStatus.ok) {
+            throw new Error(`Unable to connect to authentication server. Please try again later. (${networkStatus.message})`);
+          }
+
+          let response;
+          const requestBody = isRegister
+            ? {
                 email: credentials.email,
                 password: credentials.password,
                 firstName: credentials.firstName,
                 lastName: credentials.lastName,
-              }),
-            });
-          } else {
-            // Handle login
-            response = await fetch(`${apiUrl}/auth/login`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+              }
+            : {
                 email: credentials.email,
                 password: credentials.password,
-              }),
-            });
-          }
-          
-          // Handle errors from API
-          if (!response.ok) {
-            const error = await response.json();
-            // Extract the error message from the API response
-            const errorMessage = error.error || error.message || 'Authentication failed';
-            throw new Error(errorMessage);
-          }
-          
-          // Parse the response
-          const data = await response.json();
-          
-          // Log the successful response structure (without sensitive data)
-          console.log('Auth API response structure:', {
-            hasAccessToken: !!data.accessToken,
-            hasUserObject: !!data.user,
-            userId: data.user?.id,
-            userEmail: data.user?.email ? `${data.user.email.substring(0, 3)}...` : 'not available',
-            status: data.status || 'no status provided',
+              };
+
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Correlation-ID': correlationId
+            },
+            body: JSON.stringify(requestBody),
           });
-          
-          // Check if response has the expected structure
-          if (!data.accessToken || !data.user || !data.user.id) {
-            console.error('Unexpected API response structure:', data);
+
+          if (!response.ok) {
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              const rawText = await response.text();
+              throw new Error(`Authentication failed: ${rawText}`);
+            }
+            throw new Error(errorData.error || errorData.message || `Authentication failed`);
+          }
+
+          const data = await response.json();
+          if (!data.accessToken || !data.user?.id) {
             throw new Error('Received invalid data from authentication server');
           }
-          
-          // Return the user data in the format NextAuth expects
+
           return {
             id: data.user.id,
             email: data.user.email,
-            name: `${data.user.firstName} ${data.user.lastName}`, // Combine firstName and lastName for NextAuth's name field
+            name: `${data.user.firstName} ${data.user.lastName}`,
             firstName: data.user.firstName,
             lastName: data.user.lastName,
             accessToken: data.accessToken,
           };
         } catch (error: any) {
-          // Log detailed error information
-          console.error('Auth error details:', {
+          console.error(`❌ AUTH ERROR [${correlationId}]:`, {
             message: error.message,
             stack: error.stack,
-            context: isServerSide() ? 'server-side' : 'client-side',
-            apiUrl: API_URL,
             credentials: credentials ? { email: credentials.email, hasPassword: !!credentials.password } : 'No credentials',
           });
-          
-          // Enhance error message with network connectivity details if it's a fetch error
-          if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error(`Network error connecting to authentication server: ${error.message}`);
-          }
-          
-          // Return error message to display to the user
-          if (error.message) {
-            throw new Error(error.message);
-          } else {
-            throw new Error('Authentication failed. Please check your credentials and try again.');
-          }
+          throw new Error(error.message || 'Authentication failed. Please try again.');
         }
       }
     })
@@ -148,42 +164,18 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user, trigger }) {
-      // Log JWT callback
-      console.log('JWT Callback:', {
-        trigger,
-        hasUser: !!user,
-        hasToken: !!token,
-        userId: user?.id || token?.id || 'none',
-        timestamp: new Date().toISOString()
-      });
-
+    async jwt({ token, user }) {
       if (user) {
-        // First time jwt callback is run, user is available
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
         token.accessToken = user.accessToken;
-        
-        console.log('JWT Token updated with user data', {
-          userId: token.id,
-          hasAccessToken: !!token.accessToken
-        });
       }
       return token;
     },
-    async session({ session, token, trigger }) {
-      // Log session callback
-      console.log('Session Callback:', {
-        trigger,
-        hasToken: !!token,
-        hasSession: !!session,
-        userId: token?.id || 'none',
-        timestamp: new Date().toISOString()
-      });
-
+    async session({ session, token }) {
       if (token) {
         session.user = {
           id: token.id as string,
@@ -194,75 +186,52 @@ export const authOptions: NextAuthOptions = {
         };
         session.accessToken = token.accessToken as string;
         session.isLoggedIn = !!token.accessToken;
-        
-        console.log('Session updated with token data', {
-          userId: session.user.id,
-          isLoggedIn: session.isLoggedIn
-        });
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Log the redirect attempt
-      console.log('Redirect callback triggered:', {
-        url,
-        baseUrl
-      });
-      
-      // After successful login or registration, always redirect to the home page
       if (url.includes('/api/auth/signin') || url.includes('/login') || url.includes('/register')) {
-        console.log(`Auth action detected, redirecting to home page: ${baseUrl}/`);
         return `${baseUrl}/`;
       }
-      
-      // For callback URLs with callbackUrl parameter
+
       const callbackParam = new URL(url, baseUrl).searchParams.get('callbackUrl');
       if (callbackParam) {
-        const decodedCallback = decodeURIComponent(callbackParam);
-        
-        // Validate the callback URL is safe
-        if (decodedCallback.startsWith(baseUrl) || decodedCallback.startsWith('/')) {
-          return decodedCallback.startsWith('/') 
-            ? `${baseUrl}${decodedCallback}`
-            : decodedCallback;
+        const decoded = decodeURIComponent(callbackParam);
+        if (decoded.startsWith(baseUrl) || decoded.startsWith('/')) {
+          return decoded.startsWith('/') ? `${baseUrl}${decoded}` : decoded;
         }
       }
-      
-      // Standard URL handling
-      if (url.startsWith(baseUrl)) return url;
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
-      
-      // Default fallback to home page
-      return baseUrl;
+
+      return url.startsWith(baseUrl) ? url : `${baseUrl}/`;
     },
   },
   session: {
     strategy: 'jwt',
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET || 'a-very-secret-key-that-should-be-in-env',
   debug: process.env.NODE_ENV === 'development',
   events: {
-    async signIn({ user, account, profile, isNewUser }) {
+    async signIn({ user, account, isNewUser }) {
       console.log('User signed in:', {
         userId: user.id,
         isNewUser,
         provider: account?.provider
       });
     },
-    async signOut({ token, session }) {
+    async signOut() {
       console.log('User signed out');
     },
     async createUser({ user }) {
       console.log('New user created:', { userId: user.id });
     },
-    async linkAccount({ user, account, profile }) {
+    async linkAccount({ user, account }) {
       console.log('Account linked:', {
         userId: user.id,
         provider: account.provider
       });
     },
-    async session({ session, token }) {
+    async session({ session }) {
       console.log('Session updated:', { userId: session.user?.id });
     }
   },
@@ -274,9 +243,7 @@ export const authOptions: NextAuthOptions = {
       console.warn('NextAuth warning:', { code, message });
     },
     debug(code, ...message) {
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('NextAuth debug:', { code, message });
-      }
+      console.debug('NextAuth debug:', { code, message });
     },
   },
 };

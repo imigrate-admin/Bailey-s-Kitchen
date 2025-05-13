@@ -21,7 +21,16 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     return {
       title: product.name,
       description: product.description.substring(0, 160), // Limit description to 160 characters for SEO
-      keywords: [product.category === 'DOG' ? 'dog food' : 'cat food', 'pet food', 'premium', 'nutrition', product.name],
+      keywords: [
+        product.category === 'DOG' ? 'dog food' : 'cat food', 
+        'pet food', 
+        'premium', 
+        'nutrition', 
+        product.name,
+        'pet nutrition',
+        product.category,
+        'premium food'
+      ],
       openGraph: {
         title: product.name,
         description: product.description,
@@ -33,8 +42,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
             alt: product.name,
           }
         ],
-        type: 'product',
+        type: 'website',
         locale: 'en_US',
+        siteName: "Bailey's Kitchen",
       },
       twitter: {
         card: 'summary_large_image',

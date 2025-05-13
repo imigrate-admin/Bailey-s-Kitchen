@@ -1,3 +1,5 @@
+# Docker Compose configuration for Bailey's Kitchen
+# Note: 'version' is now obsolete, it's kept for reference only
 version: '3.8'
 
 services:
@@ -39,7 +41,12 @@ services:
       DB_SYNCHRONIZE: "true"
       DB_LOGGING: "true"
       API_PREFIX: /api/v1
-      CORS_ORIGIN: http://localhost:3000
+      # CORS configuration for all possible client origins:
+      # - localhost:3000: For direct browser access during development
+      # - web-client:3000: For container-to-container communication by service name
+      # - baileys-kitchen-web-client:3000: For container-to-container communication by container name
+      # - Additional origins can be added separated by commas for different environments (staging, production)
+      CORS_ORIGIN: http://localhost:3000,http://web-client:3000,http://baileys-kitchen-web-client:3000
       JWT_SECRET: your-super-secret-jwt-key-that-should-be-long-and-secure
       JWT_EXPIRES_IN: 1h
     ports:
@@ -50,6 +57,12 @@ services:
     volumes:
       - ./apps/api-server:/app
       - /app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:5001/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   web-client:
     build:
@@ -58,13 +71,24 @@ services:
     container_name: baileys-kitchen-web-client
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:5001/api/v1
+      # Configure API URL for both browser and server contexts
+      # Using the service name 'api' instead of 'localhost' is crucial for container-to-container
+      # communication within Docker's network. 'localhost' in a container refers to the container itself.
+      # 
+      # IMPORTANT: This URL is used by the Next.js server for server-side rendering and API calls.
+      # Browser clients will still use the browser-facing URL which is handled by the proxy in next.config.js
+      NEXT_PUBLIC_API_URL: http://api:5001/api/v1
       NEXTAUTH_SECRET: your-super-secret-jwt-key-that-should-be-long-and-secure
       NEXTAUTH_URL: http://localhost:3000
+      # Add debug flags to help troubleshoot API connection issues
+      DEBUG: "app:*,api:*"
+      # Enable network debugging
+      NEXT_TELEMETRY_DISABLED: 1
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     volumes:
       - ./apps/web-client:/app
       - /app/node_modules
@@ -92,7 +116,8 @@ services:
       DB_SYNCHRONIZE: "true"
       DB_LOGGING: "true"
       API_PREFIX: /api/v1
-      CORS_ORIGIN: http://localhost:3000
+      # CORS configuration for the user service to accept requests from all client origins
+      CORS_ORIGIN: http://localhost:3000,http://web-client:3000,http://baileys-kitchen-web-client:3000
       JWT_SECRET: your-super-secret-jwt-key-that-should-be-long-and-secure
       JWT_EXPIRES_IN: 1h
       JWT_REFRESH_EXPIRES_IN_DAYS: 30
@@ -139,8 +164,13 @@ services:
       DB_DATABASE: product_service
       DB_SYNCHRONIZE: "true"
       DB_LOGGING: "true"
-      API_PREFIX: api/v1
-      CORS_ORIGIN: http://localhost:3000
+      # Fix missing slash in API_PREFIX
+      API_PREFIX: /api/v1
+      # CORS configuration for the product service to accept requests from all client origins:
+      # - localhost:3000: For direct browser access during development
+      # - web-client:3000: For container-to-container communication by service name
+      # - baileys-kitchen-web-client:3000: For container-to-container communication by container name
+      CORS_ORIGIN: http://localhost:3000,http://web-client:3000,http://baileys-kitchen-web-client:3000
     ports:
       - "5003:5003"
     depends_on:
@@ -176,6 +206,13 @@ volumes:
   product-service-app-node-modules:
     name: product-service-app-node-modules
 
+# Networks section commented out to fix deployment issues
 networks:
   default:
     name: baileys-kitchen-network
+    # Custom driver options removed to resolve "numerical result out of range" error
+    driver: bridge
+#    driver_opts:
+#      com.docker.network.bridge.name: baileys-kitchen-bridge
+#      com.docker.network.bridge.enable_icc: "true"
+#      com.docker.network.bridge.enable_ip_masquerade: "true"
