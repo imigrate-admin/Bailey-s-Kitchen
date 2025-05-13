@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import SearchBar from '@/components/search/SearchBar';
 
 type NavItem = {
   label: string;
@@ -54,6 +55,11 @@ export default function Header() {
                 Bailey&apos;s Kitchen
               </span>
             </Link>
+          </div>
+
+          {/* Search Bar - Hidden on mobile */}
+          <div className="hidden md:block flex-grow mx-4 max-w-md">
+            <SearchBar />
           </div>
 
           {/* Desktop Navigation */}
@@ -170,6 +176,11 @@ export default function Header() {
         )}
       >
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          {/* Mobile Search Bar */}
+          <div className="px-3 py-2">
+            <SearchBar />
+          </div>
+          
           {mainNavItems.map((item) => (
             <Link
               key={item.href}
