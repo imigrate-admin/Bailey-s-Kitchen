@@ -1,5 +1,6 @@
 import api, { APIError } from '../lib/api';
-import { ApiResponse, Product } from '../types';
+import { ApiResponse } from '../types';
+import { Product } from '../types/product';
 
 interface PaginatedResponse<T> {
   data: T[];
@@ -52,7 +53,8 @@ export const productService = {
       const products = data.data.data.map((product) => ({
         ...product,
         price: Number(product.price), // Convert price to a number
-      }));
+        stock: product.stock || 0, // Ensure stock property is always present
+      })) as Product[];
 
       return {
         ...data.data,
@@ -69,11 +71,17 @@ export const productService = {
   /**
    * Search products by keyword
    */
-  async searchProducts(query: string, page = 1, limit = 20): Promise<PaginatedResponse<Product>> {
+  async searchProducts(
+    query: string, 
+    page = 1, 
+    limit = 20, 
+    category?: string
+  ): Promise<PaginatedResponse<Product>> {
     try {
       const { data } = await api.get<ApiResponse<PaginatedResponse<Product>>>('/products/search', {
         params: {
-          query,
+          q: query,
+          category,
           page,
           limit,
         },
@@ -83,7 +91,8 @@ export const productService = {
       const products = data.data.data.map((product) => ({
         ...product,
         price: Number(product.price), // Convert price to a number
-      }));
+        stock: product.stock || 0, // Ensure stock property is always present
+      })) as Product[];
 
       return {
         ...data.data,
@@ -108,7 +117,8 @@ export const productService = {
       return {
         ...data.data,
         price: Number(data.data.price), // Convert price to a number
-      };
+        stock: data.data.stock || 0, // Ensure stock property is always present
+      } as Product;
     } catch (error: any) {
       console.error('Error fetching product:', error);
       throw error instanceof APIError
@@ -134,7 +144,8 @@ export const productService = {
       const products = data.data.data.map((product) => ({
         ...product,
         price: Number(product.price), // Convert price to a number
-      }));
+        stock: product.stock || 0, // Ensure stock property is always present
+      })) as Product[];
 
       return {
         ...data.data,
