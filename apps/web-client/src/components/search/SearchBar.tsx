@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { productService } from '@/services/product.service';
 import { Product } from '@/types/product';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
+import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 
 // Available categories for filtering
 const CATEGORIES = [
@@ -76,8 +76,10 @@ const SearchBar: React.FC = () => {
     
     try {
       // Use the product service to search products
-      const filters = selectedCategory ? { category: selectedCategory } : {};
-      const response = await productService.searchProducts(searchQuery, filters);
+      // searchProducts expects (query, page, limit) parameters
+      const response = await productService.searchProducts(
+        selectedCategory ? `${searchQuery} category:${selectedCategory}` : searchQuery
+      );
       
       if (response && response.data) {
         setSearchResults(response.data);

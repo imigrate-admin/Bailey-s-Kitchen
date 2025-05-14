@@ -28,7 +28,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <Card variant="interactive" className="h-full" {...productSchemaProps}>
       <Link href={`/products/${product.id}`}>
         <Card.Media
-          src={product.imageUrl || '/images/product-placeholder.jpg'}
+          src={product.imageUrl || 'https://via.placeholder.com/400x400?text=Product+Image'}
           alt={product.name}
           aspectRatio="1:1"
           width={400}
@@ -68,7 +68,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.stock <= 0 && (
             <div className="mt-2 text-sm text-red-500">Out of Stock</div>
           )}
-          <meta itemProp="image" content={product.imageUrl || '/images/product-placeholder.jpg'} />
+          <meta itemProp="image" content={product.imageUrl || 'https://via.placeholder.com/400x400?text=Product+Image'} />
           <meta itemProp="sku" content={product.id} />
           <meta itemProp="brand" content="Bailey's Kitchen" />
         </Card.Body>
