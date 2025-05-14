@@ -52,13 +52,18 @@ export class ProductsService {
     }
   }
 
-  async searchProducts(query: string): Promise<Product[]> {
-    return this.productsRepository
+  async searchProducts(query: string, category?: PetCategory): Promise<Product[]> {
+    const queryBuilder = this.productsRepository
       .createQueryBuilder('product')
       .where('product.name ILIKE :query OR product.description ILIKE :query', {
         query: `%${query}%`,
-      })
-      .getMany();
+      });
+    
+    if (category) {
+      queryBuilder.andWhere('product.category = :category', { category });
+    }
+    
+    return queryBuilder.getMany();
   }
 }
 

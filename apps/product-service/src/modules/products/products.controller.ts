@@ -45,8 +45,11 @@ export class ProductsController {
   // Public route - no authentication required
   @Public()
   @Get('search')
-  search(@Query('q') query: string): Promise<Product[]> {
-    return this.productsService.searchProducts(query);
+  search(
+    @Query('q') query: string,
+    @Query('category') category?: PetCategory
+  ): Promise<Product[]> {
+    return this.productsService.searchProducts(query, category);
   }
 
   // Public route - no authentication required

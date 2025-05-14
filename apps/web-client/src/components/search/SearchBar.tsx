@@ -9,14 +9,11 @@ import { Product } from '@/types/product';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 
-// Available categories for filtering
+// Available categories for filtering matching PetCategory enum
 const CATEGORIES = [
   { id: '', name: 'All Categories' },
-  { id: 'breakfast', name: 'Breakfast' },
-  { id: 'lunch', name: 'Lunch' },
-  { id: 'dinner', name: 'Dinner' },
-  { id: 'snacks', name: 'Snacks' },
-  { id: 'desserts', name: 'Desserts' },
+  { id: 'DOG', name: 'Dog Food' },
+  { id: 'CAT', name: 'Cat Food' },
 ];
 
 const SearchBar: React.FC = () => {
@@ -75,10 +72,13 @@ const SearchBar: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Use the product service to search products
-      // searchProducts expects (query, page, limit) parameters
+      // Use the product service to search products with updated parameters
+      // searchProducts now accepts category as a separate parameter
       const response = await productService.searchProducts(
-        selectedCategory ? `${searchQuery} category:${selectedCategory}` : searchQuery
+        searchQuery,
+        1, // page
+        20, // limit
+        selectedCategory || undefined
       );
       
       if (response && response.data) {

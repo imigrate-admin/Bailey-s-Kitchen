@@ -71,11 +71,17 @@ export const productService = {
   /**
    * Search products by keyword
    */
-  async searchProducts(query: string, page = 1, limit = 20): Promise<PaginatedResponse<Product>> {
+  async searchProducts(
+    query: string, 
+    page = 1, 
+    limit = 20, 
+    category?: string
+  ): Promise<PaginatedResponse<Product>> {
     try {
       const { data } = await api.get<ApiResponse<PaginatedResponse<Product>>>('/products/search', {
         params: {
-          query,
+          q: query,
+          category,
           page,
           limit,
         },
