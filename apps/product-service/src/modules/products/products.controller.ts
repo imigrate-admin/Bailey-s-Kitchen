@@ -9,10 +9,10 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  UseGuards,
   SetMetadata,
+  ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -25,56 +25,60 @@ export const Public = () => SetMetadata('isPublic', true);
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // Protected route - requires authentication
   @Post()
-  @UseGuards(AuthGuard('jwt'))
   create(@Body() createProductDto: CreateProductDto): Promise<Product> {
     return this.productsService.create(createProductDto);
   }
 
-  // Public route - no authentication required
   @Public()
   @Get()
-  findAll(@Query('category') category?: PetCategory): Promise<Product[]> {
+  findAll(@Query('category') category?: string): Promise<Product[]> {
     if (category) {
-      return this.productsService.findByCategory(category);
+      // Convert category to uppercase and validate it's a valid PetCategory
+      const upperCategory = category.toUpperCase();
+      if (!Object.values(PetCategory).includes(upperCategory as PetCategory)) {
+        throw new BadRequestException(`Invalid category: ${category}`);
+      }
+      return this.productsService.findByCategory(upperCategory as PetCategory);
     }
     return this.productsService.findAll();
   }
 
-  // Public route - no authentication required
   @Public()
   @Get('search')
   search(
     @Query('q') query: string,
-    @Query('category') category?: PetCategory
+    @Query('category') category?: string
   ): Promise<Product[]> {
-    return this.productsService.searchProducts(query, category);
+    let validCategory: PetCategory | undefined;
+    if (category) {
+      // Convert category to uppercase and validate it's a valid PetCategory
+      const upperCategory = category.toUpperCase();
+      if (!Object.values(PetCategory).includes(upperCategory as PetCategory)) {
+        throw new BadRequestException(`Invalid category: ${category}`);
+      }
+      validCategory = upperCategory as PetCategory;
+    }
+    return this.productsService.searchProducts(query, validCategory);
   }
 
-  // Public route - no authentication required
   @Public()
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Product> {
+  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Product> {
     return this.productsService.findOne(id);
   }
 
-  // Protected route - requires authentication
   @Patch(':id')
-  @UseGuards(AuthGuard('jwt'))
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto,
   ): Promise<Product> {
     return this.productsService.update(id, updateProductDto);
   }
 
-  // Protected route - requires authentication
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): Promise<void> {
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.productsService.remove(id);
   }
 }
-

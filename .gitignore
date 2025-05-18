@@ -3,12 +3,19 @@ node_modules/
 .pnp
 .pnp.js
 
+
 # Testing
 coverage/
 
 # Production
 dist/
 build/
+
+# Next.js
+.next/
+*/.next/
+**/.next/
+apps/web-client/.next/
 
 # Misc
 .DS_Store

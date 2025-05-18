@@ -1,4 +1,10 @@
-export type PetCategory = 'DOG' | 'CAT';
+export enum PetCategory {
+  DOG = 'DOG',
+  CAT = 'CAT',
+  BIRD = 'BIRD',
+  FISH = 'FISH',
+  SMALL_ANIMAL = 'SMALL_ANIMAL'
+}
 
 export interface Product {
   id: string;
@@ -6,9 +12,19 @@ export interface Product {
   description: string;
   price: number;
   category: PetCategory;
-  imageUrl?: string;
+  image?: string;
   stock: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
+  _hasInvalidId?: boolean;
 }
 
+export interface ProductFilters {
+  category?: PetCategory;
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  search?: string;
+  sortBy?: 'price' | 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}

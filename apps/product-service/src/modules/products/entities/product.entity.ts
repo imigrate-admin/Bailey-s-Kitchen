@@ -1,12 +1,11 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export enum PetCategory {
-  DOG = 'dog',
-  CAT = 'cat',
-  BIRD = 'bird',
-  FISH = 'fish',
-  SMALL_ANIMAL = 'small_animal',
-  OTHER = 'other',
+  DOG = 'DOG',
+  CAT = 'CAT',
+  BIRD = 'BIRD',
+  FISH = 'FISH',
+  SMALL_ANIMAL = 'SMALL_ANIMAL'
 }
 
 @Entity('products')
@@ -26,7 +25,7 @@ export class Product {
   @Column({
     type: 'enum',
     enum: PetCategory,
-    default: PetCategory.DOG,
+    default: PetCategory.DOG
   })
   category: PetCategory;
 
@@ -42,4 +41,3 @@ export class Product {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
-

@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 const productLinks = [
-  { name: 'Dog Food', href: '/products/dogs' },
-  { name: 'Cat Food', href: '/products/cats' },
-  { name: 'Treats', href: '/products/treats' },
-  { name: 'Special Diets', href: '/products/special-diets' },
+  { name: 'Dog Food', href: '/products?category=DOG' },
+  { name: 'Cat Food', href: '/products?category=CAT' },
+  { name: 'Treats', href: '/products?category=TREATS' },
+  { name: 'Special Diets', href: '/products?category=SPECIAL' },
   { name: 'New Arrivals', href: '/products/new' },
 ];
 
 const companyLinks = [
   { name: 'About Us', href: '/about' },
-  { name: 'Blog', href: '/blog' },
+  { name: 'Paws & Tales', href: '/blog' },
   { name: 'Careers', href: '/careers' },
   { name: 'Press', href: '/press' },
   { name: 'Sustainability', href: '/sustainability' },

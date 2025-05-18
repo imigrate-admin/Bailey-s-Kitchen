@@ -1,6 +1,7 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Product } from '../modules/products/entities/product.entity';
+import { join } from 'path';
 
 export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOptions => {
   // Get database configuration from environment variables
@@ -9,7 +10,7 @@ export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOp
   const username = configService.get<string>('DB_USERNAME', 'postgres');
   const password = configService.get<string>('DB_PASSWORD', 'postgres');
   const database = configService.get<string>('DB_DATABASE', 'product_service');
-  const synchronize = configService.get<boolean>('DB_SYNCHRONIZE', true);
+  const synchronize = configService.get<boolean>('DB_SYNCHRONIZE', false);
   const logging = configService.get<boolean>('DB_LOGGING', true);
   
   // Log database connection details (with masked password)
@@ -31,6 +32,8 @@ export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOp
     entities: [Product],
     synchronize,
     logging,
+    migrations: [join(__dirname, '../migrations/*{.ts,.js}')],
+    migrationsRun: true,
   };
 };
 

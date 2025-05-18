@@ -23,15 +23,20 @@ async function bootstrap() {
     }),
   );
 
+  // Parse CORS origins and use only the first one to avoid multiple headers
+  const corsOrigins = configService.get<string>('CORS_ORIGIN', 'http://localhost:3000').split(',').map(origin => origin.trim());
+  const primaryOrigin = corsOrigins[0];
+
   // Enable CORS
   app.enableCors({
-    origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:3000'),
+    origin: primaryOrigin,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
   await app.listen(port);
   console.log(`Product service is running on: http://localhost:${port}/${apiPrefix}`);
+  console.log(`CORS enabled for origin: ${primaryOrigin}`);
 }
 
 bootstrap();

@@ -18,15 +18,26 @@ export class ProductsService {
   }
 
   async findAll(): Promise<Product[]> {
-    return this.productsRepository.find();
+    return this.productsRepository.find({
+      order: {
+        createdAt: 'DESC'
+      }
+    });
   }
 
   async findByCategory(category: PetCategory): Promise<Product[]> {
-    return this.productsRepository.find({ where: { category } });
+    return this.productsRepository.find({
+      where: { category },
+      order: {
+        createdAt: 'DESC'
+      }
+    });
   }
 
   async findOne(id: string): Promise<Product> {
-    const product = await this.productsRepository.findOne({ where: { id } });
+    const product = await this.productsRepository.findOne({
+      where: { id }
+    });
     
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
@@ -55,7 +66,7 @@ export class ProductsService {
   async searchProducts(query: string, category?: PetCategory): Promise<Product[]> {
     const queryBuilder = this.productsRepository
       .createQueryBuilder('product')
-      .where('product.name ILIKE :query OR product.description ILIKE :query', {
+      .where('LOWER(product.name) LIKE LOWER(:query) OR LOWER(product.description) LIKE LOWER(:query)', {
         query: `%${query}%`,
       });
     
@@ -63,7 +74,8 @@ export class ProductsService {
       queryBuilder.andWhere('product.category = :category', { category });
     }
     
-    return queryBuilder.getMany();
+    return queryBuilder
+      .orderBy('product.createdAt', 'DESC')
+      .getMany();
   }
 }
-

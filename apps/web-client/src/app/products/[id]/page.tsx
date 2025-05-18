@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Container } from '@/components/ui/container';
-import { Product } from '@/types/product';
+import { Product, PetCategory } from '@/types/product';
 import { productApi, APIError } from '@/lib/api';
 
 // Generate metadata for the product page
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       title: product.name,
       description: product.description.substring(0, 160), // Limit description to 160 characters for SEO
       keywords: [
-        product.category === 'DOG' ? 'dog food' : 'cat food', 
+        getCategoryKeyword(product.category),
         'pet food', 
         'premium', 
         'nutrition', 
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         description: product.description,
         images: [
           {
-            url: product.imageUrl || '/images/product-placeholder.jpg',
+            url: product.image || '/images/product-placeholder.jpg',
             width: 800,
             height: 600,
             alt: product.name,
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         card: 'summary_large_image',
         title: product.name,
         description: product.description.substring(0, 200),
-        images: [product.imageUrl || '/images/product-placeholder.jpg'],
+        images: [product.image || '/images/product-placeholder.jpg'],
       }
     };
   } catch (error) {
@@ -58,6 +58,42 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       title: 'Product Details',
       description: 'View detailed information about our pet food products',
     };
+  }
+}
+
+// Helper function to get category-specific keywords
+function getCategoryKeyword(category: PetCategory): string {
+  switch (category) {
+    case PetCategory.DOG:
+      return 'dog food';
+    case PetCategory.CAT:
+      return 'cat food';
+    case PetCategory.BIRD:
+      return 'bird food';
+    case PetCategory.FISH:
+      return 'fish food';
+    case PetCategory.SMALL_ANIMAL:
+      return 'small animal food';
+    default:
+      return 'pet food';
+  }
+}
+
+// Helper function to get formatted category name
+function getCategoryName(category: PetCategory): string {
+  switch (category) {
+    case PetCategory.DOG:
+      return 'Dog Food';
+    case PetCategory.CAT:
+      return 'Cat Food';
+    case PetCategory.BIRD:
+      return 'Bird Food';
+    case PetCategory.FISH:
+      return 'Fish Food';
+    case PetCategory.SMALL_ANIMAL:
+      return 'Small Animal Food';
+    default:
+      return 'Pet Food';
   }
 }
 
@@ -70,7 +106,7 @@ function generateJsonLd(product: Product) {
     description: product.description,
     image: product.imageUrl || '/images/product-placeholder.jpg',
     sku: product.id,
-    category: product.category === 'DOG' ? 'Dog Food' : 'Cat Food',
+    category: getCategoryName(product.category),
     offers: {
       '@type': 'Offer',
       price: product.price,
@@ -144,7 +180,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="relative aspect-square overflow-hidden rounded-lg shadow-lg">
             <Image
-              src={product.imageUrl || '/images/product-placeholder.jpg'}
+              src={product.image || '/images/product-placeholder.jpg'}
               alt={product.name}
               className="object-cover hover:scale-105 transition-transform duration-300"
               fill
@@ -159,7 +195,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
             <div className="flex items-center gap-4 mb-6">
               <span className="text-2xl font-bold">${product.price.toFixed(2)}</span>
               <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                {product.category === 'DOG' ? 'Dog Food' : 'Cat Food'}
+                {getCategoryName(product.category)}
               </span>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg mb-6">
@@ -167,7 +203,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
               <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                 <div className="flex flex-col">
                   <span className="font-medium">Category:</span>
-                  <span>{product.category === 'DOG' ? 'Dog Food' : 'Cat Food'}</span>
+                  <span>{getCategoryName(product.category)}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="font-medium">Availability:</span>

@@ -28,21 +28,9 @@ app.use(helmet());
 // Parse CORS origins from environment variable
 const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(origin => origin.trim());
 
-// Configure CORS with dynamic origin validation
+// Configure CORS
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Check if the origin is in our allowed list
-    if (corsOrigins.indexOf(origin) !== -1) {
-      // Return the specific matching origin
-      return callback(null, origin);
-    } else {
-      // If not in allowed origins, reject
-      return callback(new Error(`CORS policy: Origin ${origin} not allowed`), false);
-    }
-  },
+  origin: corsOrigins[0], // Use only the first origin to avoid multiple Access-Control-Allow-Origin headers
   credentials: true
 }));
 app.use(express.json());
@@ -67,5 +55,6 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`API is available at ${apiPrefix}`);
+  console.log(`CORS enabled for origin: ${corsOrigins[0]}`);
 });
 
