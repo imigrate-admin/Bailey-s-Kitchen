@@ -3,6 +3,17 @@ import http from 'http';
 import healthRoutes from './health.routes';
 import userRoutes from './user.routes';
 import authRoutes from './auth.routes';
+import dotenv from 'dotenv';
+
+// Define custom error interface
+interface ServiceError extends Error {
+  code?: string;
+}
+
+// Load environment variables if not already loaded
+if (!process.env.CORS_ORIGIN) {
+  dotenv.config();
+}
 
 const router = Router();
 
@@ -12,9 +23,13 @@ router.use('/users', userRoutes);
 router.use('/auth', authRoutes);
 
 // Product service configuration
-const PRODUCT_SERVICE_HOST = 'product-service';
+const PRODUCT_SERVICE_HOST = 'product-service'; // Service name from docker-compose.yml
 const PRODUCT_SERVICE_PORT = 5003;
 const PRODUCT_SERVICE_PATH = '/api/v1/products';
+const REQUEST_TIMEOUT = 10000; // 10 seconds timeout for requests
+
+// Parse CORS origins from environment variable for error responses
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(origin => origin.trim());
 
 // Simple proxy middleware for product service
 router.all('/products*', (req: Request, res: Response) => {
@@ -29,7 +44,8 @@ router.all('/products*', (req: Request, res: Response) => {
     port: PRODUCT_SERVICE_PORT,
     path: targetPath,
     method: req.method,
-    headers: { ...req.headers }
+    headers: { ...req.headers },
+    timeout: REQUEST_TIMEOUT
   };
   
   // Delete host header to avoid conflicts
@@ -47,16 +63,36 @@ router.all('/products*', (req: Request, res: Response) => {
     proxyRes.pipe(res);
   });
   
+  // Set a timeout handler
+  proxyReq.setTimeout(REQUEST_TIMEOUT, () => {
+    proxyReq.destroy();
+    console.error('Proxy request timed out after', REQUEST_TIMEOUT, 'ms');
+  });
+
   // Error handling
-  proxyReq.on('error', (error) => {
+  proxyReq.on('error', (error: ServiceError) => {
     console.error('Proxy error:', error);
     
     // Send error response if response hasn't been sent yet
     if (!res.headersSent) {
-      res.status(500).json({
+      // Get origin from request headers for CORS
+      const origin = req.headers.origin;
+      
+      // Set appropriate CORS headers if origin is allowed
+      if (origin && corsOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Vary', 'Origin');
+      }
+      
+      // Set appropriate status code based on error
+      const statusCode = error.code === 'ECONNREFUSED' ? 503 : 500;
+      
+      res.status(statusCode).json({
         error: 'Product Service Unavailable',
         message: 'The product service is currently unavailable. Please try again later.',
-        statusCode: 500
+        statusCode: statusCode,
+        code: error.code || 'UNKNOWN_ERROR'
       });
     }
   });

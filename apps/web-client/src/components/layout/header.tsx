@@ -22,12 +22,8 @@ const mainNavItems: NavItem[] = [
     href: '/products',
   },
   {
-    label: 'Dog Food',
-    href: '/products/dogs',
-  },
-  {
-    label: 'Cat Food',
-    href: '/products/cats',
+    label: 'Paws & Tales',
+    href: '/blog',
   },
   {
     label: 'About Us',

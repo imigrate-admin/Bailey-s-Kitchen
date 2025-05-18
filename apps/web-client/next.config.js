@@ -27,14 +27,24 @@ const nextConfig = {
     ],
   },
   env: {
-    // Make environment variable available to the browser
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1',
+    // Make environment variables available to the browser
+    // IMPORTANT: For browser-side requests, always use localhost regardless of environment
+    NEXT_PUBLIC_API_URL: 'http://localhost:5003/api/v1',
+    // Include a flag to help debug API connection issues
+    NEXT_PUBLIC_DEBUG_API: process.env.NEXT_PUBLIC_DEBUG_API || 'false',
   },
+
   // Add API rewrites for development
   async rewrites() {
-    // Determine API URL based on environment
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
-    const baseApiUrl = apiUrl.replace('/api/v1', '');
+    // Server-side API URL comes from environment variables (Docker service name)
+    // For local development outside of Docker, fallback to localhost
+    const serverApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5003/api/v1';
+    
+    // Browser-side API requests always go to localhost
+    const browserApiUrl = 'http://localhost:5003/api/v1';
+    
+    // Use the correct base URL for rewrites
+    const baseApiUrl = browserApiUrl.replace('/api/v1', '');
     
     if (process.env.NODE_ENV === 'development') {
       return [
@@ -76,7 +86,35 @@ const nextConfig = {
           source: '/api/auth/register',
           destination: `${baseApiUrl}/api/v1/auth/register`,
         },
-        // Handle all other API routes
+        // Public product endpoints that don't require authentication
+        {
+          source: '/api/v1/products/:path*',
+          destination: `${baseApiUrl}/api/v1/products/:path*`,
+        },
+        
+        // Health check endpoint
+        {
+          source: '/api/v1/health',
+          destination: `${baseApiUrl}/api/v1/health`,
+        },
+        
+        // Categories endpoint
+        {
+          source: '/api/v1/categories',
+          destination: `${baseApiUrl}/api/v1/categories`,
+        },
+        
+        // Public auth endpoints
+        {
+          source: '/api/v1/auth/login',
+          destination: `${baseApiUrl}/api/v1/auth/login`,
+        },
+        {
+          source: '/api/v1/auth/register',
+          destination: `${baseApiUrl}/api/v1/auth/register`,
+        },
+        
+        // All other API routes - always use localhost for browser requests
         {
           source: '/api/v1/:path*',
           destination: `${baseApiUrl}/api/v1/:path*`,

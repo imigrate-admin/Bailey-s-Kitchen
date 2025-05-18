@@ -1,25 +1,32 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { PetCategory, Product } from '@/types/product';
 
-// Define the API error response structure
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validates if a string is a valid UUID
+ * @param id The string to validate
+ * @returns True if the string is a valid UUID
+ */
+const isValidUUID = (id: string): boolean => {
+  return UUID_REGEX.test(id);
+};
+
 interface ApiErrorResponse {
   message: string;
   code?: string;
-  errors?: Record<string, string[]>; // Field validation errors
+  errors?: Record<string, string[]>;
   status?: number;
 }
 
-// Get the API URL from environment variables
-// In Docker, services communicate via their service names, not localhost
 const getApiUrl = () => {
   const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
   
-  // Default URL for local development
   if (!NEXT_PUBLIC_API_URL) {
-    return 'http://localhost:5001/api/v1';
+    return 'http://localhost:5003/api/v1';
   }
   
-  // When running in Docker, if the URL includes localhost but we're on the server,
-  // replace localhost with the service name
   if (NEXT_PUBLIC_API_URL.includes('localhost') && typeof window === 'undefined') {
     return NEXT_PUBLIC_API_URL.replace('http://localhost', 'http://api');
   }
@@ -29,14 +36,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
-// Log the API URL being used (helpful for debugging)
-if (process.env.NODE_ENV === 'development') {
-  console.log('API URL:', API_URL);
-}
-
-/**
- * Generic API error class
- */
 export class APIError extends Error {
   constructor(
     message: string,
@@ -48,17 +47,15 @@ export class APIError extends Error {
   }
 }
 
-// Create axios instance with default config
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  timeout: 30000, // 30 seconds
+  timeout: 30000,
 });
 
-// Request interceptor
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
@@ -74,7 +71,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError<ApiErrorResponse>) => {
@@ -82,7 +78,6 @@ api.interceptors.response.use(
       const status = error.response.status;
       const errorData = error.response.data;
       
-      // Handle unauthorized errors
       if (status === 401) {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth_token');
@@ -110,19 +105,83 @@ api.interceptors.response.use(
   }
 );
 
+const normalizeImageUrl = (url?: string): string => {
+  if (!url) return '/images/product-placeholder.jpg';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return url.startsWith('/') ? url : `/${url}`;
+};
+
+const mapCategory = (category: string): PetCategory => {
+  return category.toUpperCase() as PetCategory;
+};
+
 /**
- * Product API functions
+ * Normalizes a product object ensuring proper typing and format
+ * Validates that the product ID is a valid UUID
+ * @param product Raw product data from API
+ * @returns Normalized product with proper types
  */
+const normalizeProduct = (product: any): Product => {
+  // Validate the product ID is a valid UUID
+  if (!product.id || !isValidUUID(product.id)) {
+    console.warn(`Invalid product ID: ${product.id}`);
+    // Generate a fallback ID for display purposes
+    // This helps prevent rendering errors but flags the item as problematic
+    product.id = `invalid-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+    product._hasInvalidId = true;
+  }
+
+  return {
+    ...product,
+    category: mapCategory(product.category),
+    price: Number(product.price),
+    stock: product.stock || 0,
+    image: normalizeImageUrl(product.image || product.imageUrl)
+  };
+};
+
+/**
+ * Extracts products from API response and normalizes them
+ * Filters out products with invalid IDs to prevent rendering errors
+ * @param response API response containing product data
+ * @returns Array of normalized products
+ */
+const extractProducts = (response: any): Product[] => {
+  let normalizedProducts: Product[] = [];
+  
+  if (Array.isArray(response)) {
+    normalizedProducts = response.map(normalizeProduct);
+  } else if (response.data) {
+    normalizedProducts = Array.isArray(response.data) 
+      ? response.data.map(normalizeProduct)
+      : [normalizeProduct(response.data)];
+  }
+  
+  // Filter out products with invalid IDs to prevent further errors
+  const validProducts = normalizedProducts.filter(product => !product._hasInvalidId);
+  
+  // Log warning if any products were filtered out
+  const filteredCount = normalizedProducts.length - validProducts.length;
+  if (filteredCount > 0) {
+    console.warn(`Filtered out ${filteredCount} products with invalid IDs`);
+  }
+  
+  return validProducts;
+};
+
+const getApiCategory = (category?: PetCategory): string | undefined => {
+  if (!category) return undefined;
+  return category.toUpperCase();
+};
+
 export const productApi = {
-  /**
-   * Get all products, optionally filtered by category
-   */
-  async getProducts(category?: 'DOG' | 'CAT') {
+  async getProducts(category?: PetCategory) {
     try {
+      // Always use the main products endpoint with category as a query parameter
       const { data } = await api.get('/products', {
-        params: category ? { category } : undefined
+        params: category ? { category: getApiCategory(category) } : undefined
       });
-      return data;
+      return extractProducts(data);
     } catch (error: any) {
       console.error('Error fetching products:', error);
       throw error instanceof APIError 
@@ -131,15 +190,15 @@ export const productApi = {
     }
   },
 
-  /**
-
-  /**
-   * Get a single product by ID
-   */
   async getProduct(id: string) {
     try {
+      // Validate UUID before making the API call
+      if (!isValidUUID(id)) {
+        throw new APIError('Invalid product ID format', 400, 'INVALID_UUID');
+      }
+      
       const { data } = await api.get(`/products/${id}`);
-      return data;
+      return normalizeProduct(data);
     } catch (error: any) {
       console.error('Error fetching product:', error);
       if (error instanceof APIError && error.status === 404) {
@@ -151,15 +210,15 @@ export const productApi = {
     }
   },
 
-  /**
-   * Search products
-   */
-  async searchProducts(query: string) {
+  async searchProducts(query: string, category?: PetCategory) {
     try {
       const { data } = await api.get('/products/search', {
-        params: { q: query }
+        params: { 
+          q: query,
+          ...(category && { category: getApiCategory(category) })
+        }
       });
-      return data;
+      return extractProducts(data);
     } catch (error: any) {
       console.error('Error searching products:', error);
       throw error instanceof APIError 
@@ -171,4 +230,3 @@ export const productApi = {
 
 export { api };
 export default api;
-

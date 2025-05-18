@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { Product } from '@/types/product';
+import { getCategoryImage, formatImageUrl } from '@/utils/product-images';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
@@ -24,17 +25,23 @@ export function ProductCard({ product }: ProductCardProps) {
   // Ensure price is a valid number
   const price = typeof product.price === 'number' ? product.price : 0;
 
+  // Get the appropriate image based on product category or custom image
+  const productImage = product.image 
+    ? formatImageUrl(product.image)
+    : getCategoryImage(product.category);
+
   return (
     <Card variant="interactive" className="h-full" {...productSchemaProps}>
       <Link href={`/products/${product.id}`}>
-        <Card.Media
-          src={product.imageUrl || 'https://via.placeholder.com/400x400?text=Product+Image'}
-          alt={product.name}
-          aspectRatio="1:1"
-          width={400}
-          height={400}
-          className="transition-transform duration-300 hover:scale-105"
-        />
+        <div className="relative aspect-square">
+          <Image
+            src={productImage}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 hover:scale-105"
+          />
+        </div>
         <Card.Body className="p-4">
           <Card.Title 
             className="text-lg font-semibold line-clamp-1"
@@ -68,7 +75,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.stock <= 0 && (
             <div className="mt-2 text-sm text-red-500">Out of Stock</div>
           )}
-          <meta itemProp="image" content={product.imageUrl || 'https://via.placeholder.com/400x400?text=Product+Image'} />
+          <meta itemProp="image" content={productImage} />
           <meta itemProp="sku" content={product.id} />
           <meta itemProp="brand" content="Bailey's Kitchen" />
         </Card.Body>
