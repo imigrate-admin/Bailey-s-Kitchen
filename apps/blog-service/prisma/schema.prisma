@@ -1,0 +1,67 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum BlogCategory {
+  HEALTH
+  NUTRITION
+  TRAINING
+  LIFESTYLE
+  NEWS
+}
+
+model BlogPost {
+  id            String      @id @default(uuid())
+  title         String
+  slug          String      @unique
+  excerpt       String
+  content       String
+  featuredImage String?
+  category      BlogCategory
+  tags          String[]
+  status        String      @default("draft") // draft, published, archived
+  authorId      String
+  author        User        @relation(fields: [authorId], references: [id])
+  likes         Int         @default(0)
+  comments      Comment[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([category])
+  @@index([status])
+  @@index([authorId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([authorId])
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  name      String
+  avatar    String?
+  posts     BlogPost[]
+  comments  Comment[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([email])
+} 

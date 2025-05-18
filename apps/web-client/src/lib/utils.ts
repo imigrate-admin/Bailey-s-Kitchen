@@ -9,37 +9,45 @@ export function cn(...inputs: ClassValue[]) {
  * Format date into human readable string
  */
 export function formatDate(
-  date: Date | string, 
+  date: Date | string | null | undefined, 
   format: string = 'medium', 
   locale: string = 'en-US'
 ): string {
-  const dateObj = date instanceof Date ? date : new Date(date);
+  if (!date) return 'N/A';
   
-  const options: Intl.DateTimeFormatOptions = {
-    medium: {
-      year: 'numeric',
-      month: 'short', 
-      day: 'numeric'
-    },
-    long: {
-      year: 'numeric',
-      month: 'long', 
-      day: 'numeric'
-    },
-    short: {
-      month: 'numeric', 
-      day: 'numeric'
-    },
-    full: {
-      year: 'numeric',
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }
-  }[format] as Intl.DateTimeFormatOptions;
-  
-  return new Intl.DateTimeFormat(locale, options).format(dateObj);
+  try {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) return 'Invalid date';
+    
+    const options: Intl.DateTimeFormatOptions = {
+      medium: {
+        year: 'numeric',
+        month: 'short', 
+        day: 'numeric'
+      },
+      long: {
+        year: 'numeric',
+        month: 'long', 
+        day: 'numeric'
+      },
+      short: {
+        month: 'numeric', 
+        day: 'numeric'
+      },
+      full: {
+        year: 'numeric',
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }
+    }[format] as Intl.DateTimeFormatOptions;
+    
+    return new Intl.DateTimeFormat(locale, options).format(dateObj);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
 }
 
 /**
