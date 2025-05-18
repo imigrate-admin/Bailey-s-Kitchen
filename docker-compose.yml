@@ -191,6 +191,37 @@ services:
       retries: 3
       start_period: 10s
 
+  blog-service:
+    build:
+      context: .
+      dockerfile: apps/blog-service/Dockerfile
+    container_name: baileys-kitchen-blog-service
+    environment:
+      NODE_ENV: development
+      PORT: 5004
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/baileys_kitchen?schema=public
+      # CORS configuration for the blog service to accept requests from all client origins
+      CORS_ORIGIN: http://localhost:3000,http://web-client:3000,http://baileys-kitchen-web-client:3000
+    ports:
+      - "5004:5004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount source code but exclude node_modules
+      - ./apps/blog-service/src:/app/apps/blog-service/src
+      - ./apps/blog-service/prisma:/app/apps/blog-service/prisma
+      - ./apps/blog-service/tsconfig.json:/app/apps/blog-service/tsconfig.json
+      # Use named volumes for node_modules
+      - blog-service-node-modules:/app/node_modules
+      - blog-service-app-node-modules:/app/apps/blog-service/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:5004/api/blog/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 volumes:
   baileys_postgres_data:
     name: baileys_postgres_data
@@ -205,6 +236,10 @@ volumes:
     name: product-service-node-modules
   product-service-app-node-modules:
     name: product-service-app-node-modules
+  blog-service-node-modules:
+    name: blog-service-node-modules
+  blog-service-app-node-modules:
+    name: blog-service-app-node-modules
 
 # Networks section commented out to fix deployment issues
 networks:
@@ -216,3 +251,6 @@ networks:
 #      com.docker.network.bridge.name: baileys-kitchen-bridge
 #      com.docker.network.bridge.enable_icc: "true"
 #      com.docker.network.bridge.enable_ip_masquerade: "true"
+
+  baileys-network:
+    driver: bridge
