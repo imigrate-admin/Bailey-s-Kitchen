@@ -72,4 +72,15 @@ export class UsersService {
       passwordResetExpires: null,
     });
   }
+
+  async findAll(page: number = 1, limit: number = 10): Promise<{ users: User[]; total: number }> {
+    const [users, total] = await this.usersRepository.findAndCount({
+      select: ['id', 'email', 'firstName', 'lastName', 'createdAt', 'updatedAt'], // Exclude sensitive fields
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+
+    return { users, total };
+  }
 }
