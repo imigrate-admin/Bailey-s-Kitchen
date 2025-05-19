@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone', // Optimized for Docker deployments
+  experimental: {
+    serverActions: true,
+  },
   images: {
     domains: ['localhost', 'baileys-kitchen-api', 'api', 'via.placeholder.com'], // Include Docker service names
     // Configured to work in a Docker container with proper hostnames

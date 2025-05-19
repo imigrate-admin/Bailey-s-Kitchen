@@ -23,6 +23,9 @@ export class User {
   @Column()
   lastName: string;
 
+  @Column({ default: 'user' })
+  role: string;
+
   @Column({ nullable: true })
   passwordResetToken: string;
 

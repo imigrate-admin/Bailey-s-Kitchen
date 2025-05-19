@@ -84,6 +84,7 @@ services:
       DEBUG: "app:*,api:*"
       # Enable network debugging
       NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_CONTACT_SERVICE_URL: http://contact-service:5005/api/v1
     ports:
       - "3000:3000"
     depends_on:
@@ -222,6 +223,36 @@ services:
       retries: 3
       start_period: 10s
 
+  contact-service:
+    build:
+      context: .
+      dockerfile: ./apps/contact-service/Dockerfile
+    container_name: baileys-kitchen-contact-service
+    environment:
+      NODE_ENV: development
+      PORT: 5005
+      SMTP_HOST: smtp.ethereal.email
+      SMTP_PORT: 587
+      SMTP_SECURE: "false"
+      SMTP_USER: vicenta.purdy@ethereal.email
+      SMTP_PASSWORD: kFGVbcanXuXdKA4VGc
+      SMTP_FROM: vicenta.purdy@ethereal.email
+      CORS_ORIGIN: http://localhost:3000,http://web-client:3000,http://baileys-kitchen-web-client:3000
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./apps/contact-service/src:/app/apps/contact-service/src
+      - ./apps/contact-service/tsconfig.json:/app/apps/contact-service/tsconfig.json
+      - ./apps/contact-service/nest-cli.json:/app/apps/contact-service/nest-cli.json
+      - contact-service-node-modules:/app/node_modules
+      - contact-service-app-node-modules:/app/apps/contact-service/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:5005/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 volumes:
   baileys_postgres_data:
     name: baileys_postgres_data
@@ -240,6 +271,10 @@ volumes:
     name: blog-service-node-modules
   blog-service-app-node-modules:
     name: blog-service-app-node-modules
+  contact-service-node-modules:
+    name: contact-service-node-modules
+  contact-service-app-node-modules:
+    name: contact-service-app-node-modules
 
 # Networks section commented out to fix deployment issues
 networks:

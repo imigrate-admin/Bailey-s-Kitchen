@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Contact Form Submission</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .content {
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 5px;
+      border: 1px solid #dee2e6;
+    }
+    .field {
+      margin-bottom: 15px;
+    }
+    .field-label {
+      font-weight: bold;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>New Contact Form Submission</h2>
+      <p>You have received a new message from the contact form.</p>
+    </div>
+    
+    <div class="content">
+      <div class="field">
+        <div class="field-label">From:</div>
+        <div>{{name}} ({{email}})</div>
+      </div>
+      
+      <div class="field">
+        <div class="field-label">Subject:</div>
+        <div>{{subject}}</div>
+      </div>
+      
+      <div class="field">
+        <div class="field-label">Message:</div>
+        <div>{{message}}</div>
+      </div>
+      
+      <div class="field">
+        <div class="field-label">Timestamp:</div>
+        <div>{{timestamp}}</div>
+      </div>
+    </div>
+    
+    <div class="content" style="margin-top: 20px;">
+      <h3>Other Ways to Reach Us</h3>
+      <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+        <p><strong>Email:</strong> support@baileyskitchen.com</p>
+        <p><strong>Phone:</strong> +91 8939660833</p>
+        <p><strong>Address:</strong><br>Bangalore, India<br>560035</p>
+        <p><strong>Business Hours:</strong><br>
+          Monday - Friday: 9:00 AM - 6:00 PM PST<br>
+          Saturday: 10:00 AM - 4:00 PM PST<br>
+          Sunday: Closed</p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Contact Information:</p>
+      <p>Phone: +91 8939660833</p>
+      <p>Address: Bangalore, India 560035</p>
+    </div>
+  </div>
+</body>
+</html> 
