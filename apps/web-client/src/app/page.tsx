@@ -136,7 +136,7 @@ const testimonials: Testimonial[] = [
   {
     id: 1,
     content: "My dog Max has never been healthier since switching to Bailey's Kitchen. The personalized meals have improved his energy and his coat is shinier than ever!",
-    author: "Sarah Johnson",
+    author: "Coco & Choco",
     role: "Pet parent to Max, Golden Retriever",
   },
   {
