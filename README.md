@@ -19,104 +19,90 @@ Bailey's Kitchen is a full-featured e-commerce platform designed specifically fo
 
 Bailey's Kitchen follows a microservices architecture pattern with the following components:
 
-- **Frontend Application**: Next.js-based web client
+- **Frontend Application**: Next.js-based web client (Port 3000)
+- **API Gateway**: Central API server for routing and aggregation (Port 5001)
 - **Backend Services**:
-  - User Service
-  - Product Service
-  - Order Service
-  - Payment Service
-  - Notification Service
-  - Analytics Service
-- **API Gateway**: Entry point for client applications
-- **Databases**: Each service has its own PostgreSQL database
-- **Message Broker**: For asynchronous communication between services
-- **Caching Layer**: Redis for performance optimization
+  - User Service (Port 5002): Authentication, profiles, and user management
+  - Product Service (Port 5003): Catalog and inventory management
+  - Blog Service (Port 5004): Content management and blog functionality
+  - Order Service: Order processing and tracking (Planned)
+  - Payment Service: Payment processing (Planned)
+  - Notification Service: Email and notifications (Planned)
+  - Analytics Service: Reporting and metrics (Planned)
+- **Databases**: PostgreSQL with separate schemas per service
+- **Caching**: Redis (Planned)
+- **Message Queue**: RabbitMQ/Kafka (Planned)
 
 ### Architecture Diagram
 
 ```
-┌────────────────┐      ┌────────────────┐
-│  Web Client    │      │  Mobile Apps   │
-│  (Next.js)     │      │  (Future)      │
-└────────┬───────┘      └────────┬───────┘
-         │                       │        
-         └───────────┬───────────┘        
-                     ▼                    
-         ┌────────────────────────┐       
-         │      API Gateway       │       
-         └────────────┬───────────┘       
-                     │                    
-         ┌───────────┴───────────┐        
-         ▼           ▼           ▼        
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│  User       │ │  Product    │ │  Order      │
-│  Service    │ │  Service    │ │  Service    │
-└──────┬──────┘ └──────┬──────┘ └──────┬──────┘
-       │               │               │       
-       ▼               ▼               ▼       
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│  User DB    │ │  Product DB │ │  Order DB   │
-└─────────────┘ └─────────────┘ └─────────────┘
-                                              
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│  Payment    │ │Notification │ │  Analytics  │
-│  Service    │ │  Service    │ │  Service    │
-└──────┬──────┘ └──────┬──────┘ └──────┬──────┘
-       │               │               │       
-       ▼               ▼               ▼       
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│ Payment DB  │ │Notification │ │Analytics DB │
-└─────────────┘ │     DB      │ └─────────────┘
-                └─────────────┘                
+┌────────────────┐      
+│  Web Client    │      
+│  (Next.js:3000)│      
+└────────┬───────┘      
+         │              
+         ▼              
+┌────────────────┐      
+│  API Gateway   │      
+│  (Port: 5001)  │      
+└────────┬───────┘      
+         │              
+    ┌────┴─────┐        
+    ▼          ▼        
+┌─────────┐  ┌─────────┐
+│  User   │  │Product  │
+│Service  │  │Service  │
+│(P:5002) │  │(P:5003) │
+└────┬────┘  └────┬────┘
+     │            │     
+┌────┴────┐  ┌────┴────┐
+│User DB  │  │Product  │
+│Schema   │  │DB Schema│
+└─────────┘  └─────────┘
+
+┌─────────┐  ┌─────────┐
+│  Blog   │  │Future   │
+│Service  │  │Services │
+│(P:5004) │  │(Planned)│
+└────┬────┘  └─────────┘
+     │                  
+┌────┴────┐            
+│Blog DB  │            
+│Schema   │            
+└─────────┘            
 ```
 
-## 📁 Directory Structure
+## 📁 Current Directory Structure
 
 ```
 bailey-s-kitchen/
 ├── apps/                      # Application services
-│   ├── web-client/            # Next.js frontend application
-│   ├── user-service/          # User management service
-│   ├── product-service/       # Product management service
-│   ├── order-service/         # Order processing service
-│   ├── payment-service/       # Payment processing service
-│   ├── notification-service/  # Notification handling service
-│   └── analytics-service/     # Analytics and reporting service
+│   ├── web-client/           # Next.js frontend application
+│   ├── api-server/           # API Gateway service
+│   ├── user-service/         # User management service
+│   ├── product-service/      # Product management service
+│   ├── blog-service/         # Blog and content service
+│   ├── order-service/        # Order processing (Planned)
+│   ├── payment-service/      # Payment processing (Planned)
+│   ├── notification-service/ # Notification handling (Planned)
+│   └── analytics-service/    # Analytics and reporting (Planned)
 │
 ├── packages/                  # Shared libraries and utilities
-│   ├── common/                # Common utilities and helpers
-│   ├── api-client/            # API client libraries
-│   ├── ui-components/         # Shared UI components (if applicable)
-│   └── database/              # Database schemas and migrations
+│   └── common/               # Common utilities and helpers
 │
-├── infrastructure/            # Infrastructure as code
-│   ├── docker/                # Docker configurations
-│   │   └── docker-compose.yml # Local development setup
-│   └── kubernetes/            # Kubernetes manifests
-│       ├── base/              # Base configurations
-│       ├── development/       # Development environment config
-│       └── production/        # Production environment config
-│
-├── docs/                      # Documentation
-│   ├── architecture/          # Architecture documents
-│   ├── api/                   # API documentation
-│   └── development/           # Development guides
-│
-├── scripts/                   # Utility scripts
-├── .gitignore                 # Git ignore file
-├── package.json               # Root package.json for workspace management
-└── README.md                  # This file
+├── docker-compose.yml        # Local development environment
+├── package.json              # Root package.json (Turborepo)
+└── README.md                 # Project documentation
 ```
 
 ## 🔧 Local Development Setup
 
 ### Prerequisites
 
-- Node.js (v16 or later)
-- npm (v8 or later)
+- Node.js (v18 or later)
+- npm (v9.5.0 or later)
 - Docker and Docker Compose
-- PostgreSQL (optional if using containerized version)
-- Redis (optional if using containerized version)
+- PostgreSQL (via Docker)
 
 ### Initial Setup
 
@@ -126,80 +112,76 @@ bailey-s-kitchen/
    cd bailey-s-kitchen
    ```
 
-2. Install dependencies:
+2. Create required Docker volumes:
+   ```bash
+   docker volume create baileys_postgres_data
+   ```
+
+3. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Start the development environment:
+4. Start the development environment:
    ```bash
    # Start all services with Docker Compose
    docker-compose up -d
-
-   # Or start specific services
-   docker-compose up -d postgres redis
    ```
 
-4. Set up environment variables:
-   ```bash
-   # Copy example environment files for each service
-   cd apps/web-client && cp .env.example .env.local
-   # Repeat for other services
-   ```
+### Service Ports
 
-5. Start the development servers:
-   ```bash
-   # Start all services in development mode
-   npm run dev
+- Web Client: http://localhost:3000
+- API Gateway: http://localhost:5001
+- User Service: http://localhost:5002
+- Product Service: http://localhost:5003
+- Blog Service: http://localhost:5004
+- PostgreSQL: localhost:5432
 
-   # Or start specific services
-   npm run dev:web
-   npm run dev:user-service
-   # etc.
-   ```
+## 🛠️ Current Technology Stack
 
-## 📋 Available Scripts
-
-- `npm run dev`: Start all services in development mode
-- `npm run build`: Build all services
-- `npm run test`: Run tests for all services
-- `npm run lint`: Run linting for all services
-- `npm run format`: Format code using Prettier
-- `npm run docker:up`: Start Docker Compose environment
-- `npm run docker:down`: Stop Docker Compose environment
-
-Service-specific scripts can be run using the workspace syntax:
-```bash
-npm run dev -w apps/web-client
-npm run test -w apps/user-service
-```
-
-## 🛠️ Technology Stack
-
-### Frontend
+### Frontend (Web Client)
 - **Framework**: Next.js
-- **Language**: TypeScript
-- **State Management**: React Context API / Redux (as needed)
-- **Styling**: Tailwind CSS / Styled Components
-- **Testing**: Jest, React Testing Library, Cypress
+- **State Management**: React Context API
+- **UI Components**: Custom components with TipTap editor integration
+- **Development Port**: 3000
 
-### Backend
-- **Framework**: NestJS
-- **Language**: TypeScript
-- **API**: REST with OpenAPI documentation
-- **Database**: PostgreSQL
-- **ORM**: TypeORM / Prisma
-- **Caching**: Redis
-- **Message Broker**: Redis / RabbitMQ / Kafka
-- **Testing**: Jest, Supertest
+### Backend Services
+- **API Gateway**
+  - Framework: NestJS
+  - Port: 5001
+  - Features: Request routing, API aggregation
+
+- **User Service**
+  - Framework: NestJS
+  - Port: 5002
+  - Features: Authentication, JWT, email integration
+
+- **Product Service**
+  - Framework: NestJS
+  - Port: 5003
+  - Features: Product management, categories
+
+- **Blog Service**
+  - Framework: NestJS
+  - Port: 5004
+  - Features: Content management, rich text editing
 
 ### Infrastructure
-- **Containerization**: Docker
-- **Orchestration**: Kubernetes
-- **CI/CD**: GitHub Actions (or other CI tool)
-- **Monitoring**: Prometheus, Grafana
-- **Logging**: ELK Stack (or similar)
-- **Service Mesh**: Istio (planned)
+- **Database**: PostgreSQL 15 (Alpine)
+  - Separate schemas per service
+  - Automated health checks
+  - Backup volume support
+
+- **Container Orchestration**: Docker Compose
+  - Health checks for all services
+  - Volume management
+  - Network isolation
+
+- **Development Tools**
+  - Turbo for monorepo management
+  - ESLint and Prettier for code formatting
+  - Husky for git hooks
+  - Commitlint for commit message formatting
 
 ## 🤝 Contribution Guidelines
 
