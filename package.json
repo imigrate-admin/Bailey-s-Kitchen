@@ -12,7 +12,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "prepare": "husky install"
+    "prepare": "husky install || true"
   },
   "keywords": [
     "ecommerce",
@@ -57,7 +57,7 @@
     "@tiptap/extension-link": "^2.1.12",
     "@tiptap/react": "^2.1.12",
     "@tiptap/starter-kit": "^2.1.12",
-    "nodemailer": "^6.10.1"
+    "nodemailer": "^6.9.0"
   },
   "packageManager": "npm@9.5.1"
 }

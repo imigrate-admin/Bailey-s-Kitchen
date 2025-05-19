@@ -41,14 +41,13 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">Phone</h3>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
+                    <p className="text-gray-600">+91 8939 660 833</p>
                   </div>
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">Address</h3>
                     <p className="text-gray-600">
-                      123 Pet Food Lane<br />
-                      San Francisco, CA 94105<br />
-                      United States
+                      Bangalore, India<br />
+                      560035<br />
                     </p>
                   </div>
                   <div>
